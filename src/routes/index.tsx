@@ -109,14 +109,13 @@ function Index() {
         <ScrollReveal>
           <div className="flex flex-wrap items-end justify-between gap-4 border-b border-ink pb-5">
             <div>
-              <p className="text-xs tracking-[0.3em] text-brass uppercase font-semibold">
+              <p className="text-xs tracking-[0.35em] text-brass uppercase font-semibold block mb-2">
                 قائمة المنتجات
               </p>
-              <h2 className="mt-2 font-display text-5xl md:text-6xl">التحميصات</h2>
+              <h2 className="font-display text-5xl leading-tight md:text-6xl">التحميصات</h2>
             </div>
             <p className="max-w-sm text-sm text-muted-foreground">
-              أربع درجات تحميص مميزة. تصفح الأنواع والأوزان والأسعار واستفسر مباشرة عبر صفحاتنا
-              الرسمية.
+              أربع درجات تحميص مميزة. تصفح النكهات والتفاصيل واستفسر مباشرة عبر صفحاتنا الرسمية.
             </p>
           </div>
         </ScrollReveal>
