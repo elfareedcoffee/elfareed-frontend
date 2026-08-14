@@ -47,8 +47,8 @@ function Index() {
               اختيار الملوك
             </p>
             <p className="mt-8 max-w-md text-sm leading-8 text-muted-foreground">
-              محمصة صغيرة في المرج القديمة. بنحمّص على دفعات قليلة كل يوم، وبنطحن
-              الطلب وقت ما تطلبه — مش قبلها.
+              محمصة صغيرة في المرج القديمة. بنحمّص على دفعات قليلة كل يوم، وبنطحن الطلب وقت ما تطلبه
+              — مش قبلها.
             </p>
 
             <div className="mt-9 flex flex-wrap items-center gap-3">
@@ -129,10 +129,7 @@ function Index() {
       </section>
 
       {/* STORY */}
-      <section
-        id="story"
-        className="torn-top grain border-y border-ink/25 bg-ink text-cream"
-      >
+      <section id="story" className="torn-top grain border-y border-ink/25 bg-ink text-cream">
         <ScrollReveal className="mx-auto grid max-w-6xl items-center gap-12 px-5 py-24 md:grid-cols-2">
           <div>
             <p className="text-xs tracking-[0.3em] text-brass uppercase">عن الفريد</p>
@@ -142,13 +139,12 @@ function Index() {
               بمزاج قديم
             </h2>
             <p className="mt-7 max-w-lg text-sm leading-9 text-cream/80">
-              بدأنا بمكنة تحميص واحدة وشوال خيش. النية بسيطة: بن نظيف، تحميص أمين،
-              وسعر عادل. بنختار الحبة بنفسنا، وبنحمّص دفعات صغيرة عشان الفنجان يوصلك
-              وهو لسه فايح.
+              بدأنا بمكنة تحميص واحدة وشوال خيش. النية بسيطة: بن نظيف، تحميص أمين، وسعر عادل. بنختار
+              الحبة بنفسنا، وبنحمّص دفعات صغيرة عشان الفنجان يوصلك وهو لسه فايح.
             </p>
             <p className="mt-5 max-w-lg text-sm leading-9 text-cream/80">
-              «اختيار الملوك» مش شعار للزينة — ده المعيار اللي بنرفض بيه أي دفعة
-              تحميص مش على المستوى.
+              «اختيار الملوك» مش شعار للزينة — ده المعيار اللي بنرفض بيه أي دفعة تحميص مش على
+              المستوى.
             </p>
             <div className="mt-8 flex items-center gap-4">
               <Stamp className="h-16 w-16 text-brass animate-float" />
@@ -184,8 +180,8 @@ function Index() {
               <p className="text-xs tracking-[0.3em] text-ink/60 uppercase">B2B</p>
               <h2 className="mt-4 font-display text-4xl">الجملة</h2>
               <p className="mt-5 text-sm leading-8">
-                توريد للكافيهات، المطاعم، والمحلات. أسعار حسب الكمية، تحميص وطحن على
-                مواصفاتك، وتعاقد شهري بتوريد ثابت.
+                توريد للكافيهات، المطاعم، والمحلات. أسعار حسب الكمية، تحميص وطحن على مواصفاتك،
+                وتعاقد شهري بتوريد ثابت.
               </p>
               <dl className="mt-7 space-y-3 text-sm">
                 <div className="flex items-center justify-between border-b border-ink/25 pb-2">

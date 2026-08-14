@@ -12,7 +12,6 @@ const NAV: { label: string; hash?: string }[] = [
   { label: "تواصل", hash: "contact" },
 ];
 
-
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const { count } = useCart();
@@ -51,7 +50,6 @@ export function SiteHeader() {
                 {n.label}
               </Link>
             ))}
-
           </nav>
 
           <button
@@ -79,11 +77,7 @@ function CartPanel({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 flex">
-      <button
-        aria-label="إغلاق"
-        onClick={onClose}
-        className="flex-1 bg-ink/60"
-      />
+      <button aria-label="إغلاق" onClick={onClose} className="flex-1 bg-ink/60" />
       <aside className="flex h-full w-full max-w-md flex-col border-s border-ink bg-cream">
         <div className="flex items-center justify-between border-b border-ink/25 px-5 py-4">
           <h2 className="font-display text-2xl">طلبك</h2>

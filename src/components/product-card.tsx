@@ -10,9 +10,7 @@ export function ProductCard({ product, index }: { product: Product; index: numbe
   const w = product.weights[weightIdx]!;
 
   return (
-    <article
-      className="grain card-hover flex h-full flex-col border border-ink bg-cream"
-    >
+    <article className="grain card-hover flex h-full flex-col border border-ink bg-cream">
       <div className="h-2 w-full shrink-0" style={{ backgroundColor: product.marker }} />
       <div className="flex flex-1 flex-col p-6">
         <div className="flex items-start justify-between">
