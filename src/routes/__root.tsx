@@ -11,7 +11,6 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { CartProvider } from "../lib/cart";
 import { Toaster } from "../components/ui/sonner";
 
 function NotFoundComponent() {
@@ -75,10 +74,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "بن الفريد — اختيار الملوك" },
+      { title: "بن فريد — اختيار الملوك | Fareed Coffee" },
       {
         name: "description",
-        content: "محمصة بن الفريد بالمرج القديمة: محوج، وسط، فاتح، غامق. اطلب أونلاين.",
+        content:
+          "محمصة بن فريد بالمرج القديمة: محوج، وسط، فاتح، غامق. تصفح منتجاتنا وتواصل معنا عبر الفيسبوك والإنستجرام.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -119,10 +119,8 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <CartProvider>
-        <Outlet />
-        <Toaster position="top-center" />
-      </CartProvider>
+      <Outlet />
+      <Toaster position="top-center" />
     </QueryClientProvider>
   );
 }

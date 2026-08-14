@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { MapPin, Phone } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { ProductCard } from "@/components/product-card";
@@ -12,16 +12,16 @@ import wholesaleSacks from "@/assets/wholesale-sacks.jpg";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "بن الفريد — اختيار الملوك | محمصة بن بالمرج القديمة" },
+      { title: "بن فريد — اختيار الملوك | Fareed Coffee" },
       {
         name: "description",
         content:
-          "بن الفريد: محوج، وسط، فاتح، غامق — بن محمص طازج بالمرج القديمة، القاهرة. اطلب أونلاين أو اتواصل للجملة.",
+          "محمصة بن فريد: محوج، وسط، فاتح، غامق — بن محمص طازج بالمرج القديمة، القاهرة. تصفح المنتجات وتواصل معنا عبر الفيسبوك والإنستجرام.",
       },
-      { property: "og:title", content: "بن الفريد — اختيار الملوك" },
+      { property: "og:title", content: "بن فريد — اختيار الملوك | Fareed Coffee" },
       {
         property: "og:description",
-        content: "بن محمص طازج: محوج، وسط، فاتح، غامق. توصيل داخل القاهرة وأسعار جملة.",
+        content: "بن محمص طازج: محوج، وسط، فاتح، غامق. تصفح منتجاتنا وتواصل معنا للجملة والقطاعي.",
       },
     ],
   }),
@@ -37,11 +37,11 @@ function Index() {
       <section className="relative overflow-hidden border-b border-ink/25">
         <div className="mx-auto grid max-w-6xl gap-10 px-5 pt-16 pb-24 md:grid-cols-12 md:pt-24">
           <div className="animate-fade-in-up md:col-span-7 md:pt-6">
-            <p className="text-xs tracking-[0.35em] text-brass uppercase">
-              Alfareed Coffee · Cairo
+            <p className="text-xs tracking-[0.35em] text-brass uppercase font-semibold">
+              Fareed Coffee · Cairo
             </p>
             <h1 className="mt-6 font-display text-[clamp(3.5rem,11vw,7.5rem)] leading-[0.95]">
-              بن الفريد
+              بن فريد
             </h1>
             <p className="hand-underline mt-2 inline-block font-display text-[clamp(1.75rem,5vw,3rem)] text-brass">
               اختيار الملوك
@@ -53,24 +53,20 @@ function Index() {
 
             <div className="mt-9 flex flex-wrap items-center gap-3">
               <a
-                href="#products"
-                onClick={(e) => {
-                  e.preventDefault();
-                  document.getElementById("products")?.scrollIntoView({ behavior: "smooth" });
-                }}
-                className="border border-ink bg-ink px-7 py-3.5 text-sm text-cream transition-all duration-300 hover:bg-brass hover:text-ink hover:shadow-md active:scale-95 cursor-pointer"
+                href="https://www.facebook.com/fareedcoffee"
+                target="_blank"
+                rel="noreferrer"
+                className="border border-ink bg-ink px-7 py-3.5 text-sm text-cream transition-all duration-300 hover:bg-brass hover:text-ink hover:shadow-md active:scale-95 cursor-pointer font-medium"
               >
-                اطلب أونلاين
+                تواصل عبر فيسبوك
               </a>
               <a
-                href="#products"
-                onClick={(e) => {
-                  e.preventDefault();
-                  document.getElementById("products")?.scrollIntoView({ behavior: "smooth" });
-                }}
-                className="border border-ink px-7 py-3.5 text-sm transition-all duration-300 hover:bg-kraft active:scale-95 cursor-pointer"
+                href="https://www.instagram.com/fareedcoffee"
+                target="_blank"
+                rel="noreferrer"
+                className="border border-ink bg-kraft px-7 py-3.5 text-sm text-ink transition-all duration-300 hover:bg-ink hover:text-cream active:scale-95 cursor-pointer font-medium"
               >
-                تصفح المنتجات
+                تابعنا على إنستجرام
               </a>
             </div>
 
@@ -108,13 +104,19 @@ function Index() {
         </div>
       </section>
 
-      {/* PRODUCTS */}
+      {/* PRODUCTS CATALOG */}
       <section id="products" className="mx-auto max-w-6xl px-5 py-20">
         <ScrollReveal>
           <div className="flex flex-wrap items-end justify-between gap-4 border-b border-ink pb-5">
-            <h2 className="font-display text-5xl md:text-6xl">التحميصات</h2>
+            <div>
+              <p className="text-xs tracking-[0.3em] text-brass uppercase font-semibold">
+                قائمة المنتجات
+              </p>
+              <h2 className="mt-2 font-display text-5xl md:text-6xl">التحميصات</h2>
+            </div>
             <p className="max-w-sm text-sm text-muted-foreground">
-              أربع درجات. اختار الوزن والكمية وضيفها لطلبك — التوصيل داخل القاهرة.
+              أربع درجات تحميص مميزة. تصفح الأنواع والأوزان والأسعار واستفسر مباشرة عبر صفحاتنا
+              الرسمية.
             </p>
           </div>
         </ScrollReveal>
@@ -132,7 +134,7 @@ function Index() {
       <section id="story" className="torn-top grain border-y border-ink/25 bg-ink text-cream">
         <ScrollReveal className="mx-auto grid max-w-6xl items-center gap-12 px-5 py-24 md:grid-cols-2">
           <div>
-            <p className="text-xs tracking-[0.3em] text-brass uppercase">عن الفريد</p>
+            <p className="text-xs tracking-[0.3em] text-brass uppercase">عن فريد</p>
             <h2 className="mt-5 font-display text-5xl leading-tight md:text-6xl">
               محمصة جديدة،
               <br />
@@ -161,6 +163,51 @@ function Index() {
             height={912}
             className="border border-cream/25 object-cover transition-transform duration-500 hover:scale-[1.02] md:translate-x-6"
           />
+        </ScrollReveal>
+      </section>
+
+      {/* SOCIAL MEDIA CONNECT BANNER */}
+      <section id="socials" className="border-b border-ink/25 bg-cream/80 py-20">
+        <ScrollReveal className="mx-auto max-w-6xl px-5 text-center">
+          <p className="text-xs tracking-[0.35em] text-brass uppercase font-semibold">تواصل معنا</p>
+          <h2 className="mt-3 font-display text-4xl md:text-5xl">
+            تواصل واطلب عبر منصاتنا الرسمية
+          </h2>
+          <p className="mt-4 mx-auto max-w-xl text-sm leading-8 text-muted-foreground">
+            يسعدنا استقبال استفساراتكم وطلباتكم المباشرة عبر صفحتنا الرسمية على فيسبوك وإنستجرام.
+          </p>
+
+          <div className="mt-10 flex flex-wrap justify-center gap-6">
+            <a
+              href="https://www.facebook.com/fareedcoffee"
+              target="_blank"
+              rel="noreferrer"
+              className="grain card-hover flex w-full max-w-sm flex-col items-center border border-ink bg-cream p-8 text-center"
+            >
+              <span className="font-display text-3xl">صفحة الفيسبوك</span>
+              <p className="mt-3 text-xs text-muted-foreground">
+                تابع أحدث العروض والطلبات المباشرة
+              </p>
+              <span className="mt-6 border border-ink bg-ink px-6 py-2.5 text-xs text-cream transition-colors hover:bg-brass hover:text-ink">
+                facebook.com/fareedcoffee
+              </span>
+            </a>
+
+            <a
+              href="https://www.instagram.com/fareedcoffee"
+              target="_blank"
+              rel="noreferrer"
+              className="grain card-hover flex w-full max-w-sm flex-col items-center border border-ink bg-cream p-8 text-center"
+            >
+              <span className="font-display text-3xl">صفحة الإنستجرام</span>
+              <p className="mt-3 text-xs text-muted-foreground">
+                استمتع بتغطية التحميص اليومي والمنتجات
+              </p>
+              <span className="mt-6 border border-ink bg-kraft px-6 py-2.5 text-xs text-ink transition-colors hover:bg-ink hover:text-cream font-medium">
+                instagram.com/fareedcoffee
+              </span>
+            </a>
+          </div>
         </ScrollReveal>
       </section>
 
@@ -225,14 +272,14 @@ function Index() {
               <a href={`tel:${CONTACT.sales}`} dir="ltr" className="font-mono">
                 {CONTACT.sales}
               </a>
-              <span className="text-muted-foreground">— للطلبات</span>
+              <span className="text-muted-foreground">— للتواصل</span>
             </p>
             <p className="mt-6 text-sm text-muted-foreground">
               مفتوح يوميًا من ٩ صباحًا حتى ١١ مساءً.
             </p>
           </div>
           <iframe
-            title="موقع محمصة بن الفريد على الخريطة"
+            title="موقع محمصة بن فريد على الخريطة"
             src="https://www.openstreetmap.org/export/embed.html?bbox=31.32%2C30.14%2C31.36%2C30.17&layer=mapnik&marker=30.155,31.34"
             className="h-72 w-full border border-ink"
             loading="lazy"
@@ -243,12 +290,12 @@ function Index() {
       <footer className="border-t border-ink/25 bg-ink text-cream">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-6 px-5 py-10">
           <div>
-            <p className="font-display text-3xl">بن الفريد</p>
+            <p className="font-display text-3xl">بن فريد</p>
             <p className="mt-1 text-xs text-cream/60">اختيار الملوك</p>
           </div>
           <div className="text-sm text-cream/80">
             <p>
-              الطلبات:{" "}
+              التواصل:{" "}
               <a href={`tel:${CONTACT.sales}`} dir="ltr" className="font-mono">
                 {CONTACT.sales}
               </a>
@@ -261,10 +308,10 @@ function Index() {
             </p>
           </div>
           <div className="flex gap-4 text-sm text-cream/70">
-            <a href="https://facebook.com" target="_blank" rel="noreferrer">
+            <a href="https://www.facebook.com/fareedcoffee" target="_blank" rel="noreferrer">
               فيسبوك
             </a>
-            <a href="https://instagram.com" target="_blank" rel="noreferrer">
+            <a href="https://www.instagram.com/fareedcoffee" target="_blank" rel="noreferrer">
               إنستجرام
             </a>
             <a href={`https://wa.me/2${CONTACT.sales}`} target="_blank" rel="noreferrer">

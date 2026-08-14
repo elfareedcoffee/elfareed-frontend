@@ -1,13 +1,9 @@
 import { useState } from "react";
-import { toast } from "sonner";
-import { useCart } from "@/lib/cart";
 import type { Product } from "@/data/products";
 
-export function ProductCard({ product, index }: { product: Product; index: number }) {
-  const { add } = useCart();
-  const [weightIdx, setWeightIdx] = useState(1);
-  const [qty, setQty] = useState(1);
-  const w = product.weights[weightIdx]!;
+export function ProductCard({ product }: { product: Product; index: number }) {
+  const [selectedIdx, setSelectedIdx] = useState(0);
+  const selectedWeight = product.weights[selectedIdx]!;
 
   return (
     <article className="grain card-hover flex h-full flex-col border border-ink bg-cream">
@@ -28,16 +24,17 @@ export function ProductCard({ product, index }: { product: Product; index: numbe
         </div>
 
         <p className="mt-4 text-sm leading-7 text-muted-foreground">{product.desc}</p>
-        <p className="mt-3 text-xs font-medium text-brass">{product.note}</p>
+        <p className="mt-3 text-xs font-semibold text-brass">{product.note}</p>
 
         <div className="mt-auto pt-6">
+          <p className="text-xs text-ink/70 font-medium mb-2">الأوزان المتاحة:</p>
           <div className="flex flex-wrap gap-2">
             {product.weights.map((weight, i) => (
               <button
                 key={weight.grams}
-                onClick={() => setWeightIdx(i)}
+                onClick={() => setSelectedIdx(i)}
                 className={`border px-3 py-1.5 text-sm transition-all duration-200 ${
-                  i === weightIdx
+                  i === selectedIdx
                     ? "border-ink bg-ink text-cream shadow-sm"
                     : "border-ink/35 hover:border-ink hover:bg-kraft/50"
                 }`}
@@ -48,46 +45,20 @@ export function ProductCard({ product, index }: { product: Product; index: numbe
           </div>
 
           <div className="mt-5 flex items-center justify-between border-t border-ink/20 pt-4">
-            <div className="flex items-center border border-ink/40">
-              <button
-                className="px-3 py-1.5 transition-colors hover:bg-ink hover:text-cream"
-                onClick={() => setQty((q) => q + 1)}
-              >
-                +
-              </button>
-              <span className="w-8 text-center text-sm font-semibold" dir="ltr">
-                {qty}
-              </span>
-              <button
-                className="px-3 py-1.5 transition-colors hover:bg-ink hover:text-cream"
-                onClick={() => setQty((q) => Math.max(1, q - 1))}
-              >
-                −
-              </button>
-            </div>
+            <span className="text-xs text-muted-foreground">السعر:</span>
             <span className="font-display text-2xl">
-              <span dir="ltr">{w.price * qty}</span> ج.م
+              <span dir="ltr">{selectedWeight.price}</span> ج.م
             </span>
           </div>
 
-          <button
-            onClick={() => {
-              add(
-                {
-                  productId: product.id,
-                  name: product.name,
-                  weight: w.label,
-                  grams: w.grams,
-                  price: w.price,
-                },
-                qty,
-              );
-              toast.success(`تمت إضافة ${product.name} — ${w.label}`);
-            }}
-            className="mt-4 w-full border border-ink bg-background py-3 text-sm font-medium transition-all duration-200 hover:bg-ink hover:text-cream hover:shadow-md active:scale-[0.98]"
+          <a
+            href="https://www.facebook.com/fareedcoffee"
+            target="_blank"
+            rel="noreferrer"
+            className="mt-4 flex w-full items-center justify-center border border-ink bg-ink py-3 text-sm font-medium text-cream transition-all duration-200 hover:bg-brass hover:text-ink hover:shadow-md active:scale-[0.98]"
           >
-            أضف للطلب
-          </button>
+            تواصل للاستفسار والطلب
+          </a>
         </div>
       </div>
     </article>
