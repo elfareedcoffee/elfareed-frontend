@@ -127,6 +127,17 @@ function Index() {
             </ScrollReveal>
           ))}
         </div>
+
+        <ScrollReveal className="mt-12 text-center">
+          <a
+            href="https://www.facebook.com/fareedcoffee"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center justify-center border border-ink bg-ink px-10 py-4 text-base font-medium text-cream transition-all duration-300 hover:bg-brass hover:text-ink hover:shadow-lg active:scale-95 cursor-pointer"
+          >
+            تواصل للاستفسار والطلب
+          </a>
+        </ScrollReveal>
       </section>
 
       {/* STORY */}
