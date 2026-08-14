@@ -2,12 +2,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import { MapPin, Phone } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { ProductCard } from "@/components/product-card";
-import { Stamp } from "@/components/stamp";
 import { ScrollReveal } from "@/components/scroll-reveal";
 import { products, CONTACT } from "@/data/products";
 import heroBeans from "@/assets/hero-beans.jpg";
 import storyPour from "@/assets/story-pour.jpg";
 import wholesaleSacks from "@/assets/wholesale-sacks.jpg";
+import fareedLogo from "@/assets/fareed-logo.jpg";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -96,8 +96,12 @@ function Index() {
                 height={1504}
                 className="h-[26rem] w-full border border-ink object-cover transition-transform duration-700 hover:scale-[1.01] md:h-[34rem]"
               />
-              <div className="animate-float absolute -bottom-6 start-4 flex h-24 w-24 items-center justify-center rounded-full bg-background text-brass shadow-lg md:-start-8">
-                <Stamp className="h-24 w-24" />
+              <div className="animate-float absolute -bottom-6 start-4 flex h-24 w-24 items-center justify-center rounded-full bg-background p-1 text-brass shadow-xl border-2 border-brass md:-start-8">
+                <img
+                  src={fareedLogo}
+                  alt="شعار بن فريد"
+                  className="h-full w-full rounded-full object-cover"
+                />
               </div>
             </div>
           </div>
@@ -159,7 +163,11 @@ function Index() {
               المستوى.
             </p>
             <div className="mt-8 flex items-center gap-4">
-              <Stamp className="h-16 w-16 text-brass animate-float" />
+              <img
+                src={fareedLogo}
+                alt="ختم بن فريد"
+                className="h-16 w-16 rounded-full object-cover border border-brass animate-float"
+              />
               <span className="text-xs text-cream/60">
                 ختم المحمصة — كل شوال بيتختم قبل ما يخرج
               </span>
@@ -194,6 +202,11 @@ function Index() {
               rel="noreferrer"
               className="grain card-hover flex w-full max-w-sm flex-col items-center border border-ink bg-cream p-8 text-center"
             >
+              <img
+                src={fareedLogo}
+                alt="لوجو بن فريد فيسبوك"
+                className="h-16 w-16 rounded-full object-cover border border-ink/30 mb-3"
+              />
               <span className="font-display text-3xl">صفحة الفيسبوك</span>
               <p className="mt-3 text-xs text-muted-foreground">
                 تابع أحدث العروض والطلبات المباشرة
@@ -209,6 +222,11 @@ function Index() {
               rel="noreferrer"
               className="grain card-hover flex w-full max-w-sm flex-col items-center border border-ink bg-cream p-8 text-center"
             >
+              <img
+                src={fareedLogo}
+                alt="لوجو بن فريد إنستجرام"
+                className="h-16 w-16 rounded-full object-cover border border-ink/30 mb-3"
+              />
               <span className="font-display text-3xl">صفحة الإنستجرام</span>
               <p className="mt-3 text-xs text-muted-foreground">
                 استمتع بتغطية التحميص اليومي والمنتجات
@@ -299,9 +317,16 @@ function Index() {
 
       <footer className="border-t border-ink/25 bg-ink text-cream">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-6 px-5 py-10">
-          <div>
-            <p className="font-display text-3xl">بن فريد</p>
-            <p className="mt-1 text-xs text-cream/60">اختيار الملوك</p>
+          <div className="flex items-center gap-3">
+            <img
+              src={fareedLogo}
+              alt="لوجو بن فريد"
+              className="h-10 w-10 rounded-full object-cover border border-brass/50 shrink-0"
+            />
+            <div>
+              <p className="font-display text-3xl">بن فريد</p>
+              <p className="mt-0.5 text-xs text-cream/60">اختيار الملوك</p>
+            </div>
           </div>
           <div className="text-sm text-cream/80">
             <p>

@@ -11,7 +11,7 @@ Products / Roast line (use these exact 4 categories as the core product grid):
 - فاتح (Light roast)
 - غامق (Dark roast)
 
-Location: ش عبد الفتاح أبو ريه، المرج القديمة، القاهرة Sales number: 01110583020 Wholesale numbers (رقم الجملة): 01020073246 / 01056425650
+Location: ش عبد الفتاح أبو ريه، المرج القديمة، القاهرة Sales number: 01110583020 Wholesale numbers (رقم الجملة): 01020073246 / 01005642565
 
 Required functionality: A visible, working "اطلب أونلاين" (Order Online) flow — a product grid with quantity/weight selector → cart → checkout.
 

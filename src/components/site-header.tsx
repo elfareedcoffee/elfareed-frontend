@@ -33,8 +33,12 @@ export function SiteHeader() {
     <>
       <header className="sticky top-0 z-40 border-b border-ink/25 bg-background/95 backdrop-blur-[2px]">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-5">
-          <Link to="/" className="flex items-center gap-2">
-            <Stamp className="h-8 w-8 sm:h-9 sm:w-9 text-brass animate-float shrink-0" />
+          <Link to="/" className="flex items-center gap-2.5">
+            <img
+              src="/fareed-logo.jpg"
+              alt="شعار بن فريد"
+              className="h-9 w-9 sm:h-10 sm:w-10 rounded-full object-cover border border-ink/40 shadow-sm shrink-0"
+            />
             <span className="font-display text-2xl leading-none">بن فريد</span>
           </Link>
 

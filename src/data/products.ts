@@ -12,7 +12,7 @@ export type Product = {
 
 export const CONTACT = {
   sales: "01110583020",
-  wholesale: ["01020073246", "01056425650"],
+  wholesale: ["01020073246", "01005642565"],
   address: "ش عبد الفتاح أبو ريه، المرج القديمة، القاهرة",
 };
 
