@@ -40,23 +40,23 @@ function Index() {
             <p className="text-xs tracking-[0.35em] text-brass uppercase font-semibold">
               Fareed Coffee · Cairo
             </p>
-            <h1 className="mt-6 font-display text-[clamp(3.5rem,11vw,7.5rem)] leading-[0.95]">
+            <h1 className="mt-6 font-display text-[clamp(2.75rem,10vw,7.5rem)] leading-[0.95]">
               بن فريد
             </h1>
-            <p className="hand-underline mt-2 inline-block font-display text-[clamp(1.75rem,5vw,3rem)] text-brass">
+            <p className="hand-underline mt-2 inline-block font-display text-[clamp(1.5rem,5vw,3rem)] text-brass">
               اختيار الملوك
             </p>
-            <p className="mt-8 max-w-md text-sm leading-8 text-muted-foreground">
+            <p className="mt-6 sm:mt-8 max-w-md text-sm leading-7 sm:leading-8 text-muted-foreground">
               محمصة صغيرة في المرج القديمة. بنحمّص على دفعات قليلة كل يوم، وبنطحن الطلب وقت ما تطلبه
               — مش قبلها.
             </p>
 
-            <div className="mt-9 flex flex-wrap items-center gap-3">
+            <div className="mt-8 sm:mt-9 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
               <a
                 href="https://www.facebook.com/fareedcoffee"
                 target="_blank"
                 rel="noreferrer"
-                className="border border-ink bg-ink px-7 py-3.5 text-sm text-cream transition-all duration-300 hover:bg-brass hover:text-ink hover:shadow-md active:scale-95 cursor-pointer font-medium"
+                className="flex items-center justify-center border border-ink bg-ink px-7 py-3.5 text-sm text-cream transition-all duration-300 hover:bg-brass hover:text-ink hover:shadow-md active:scale-95 cursor-pointer font-medium text-center"
               >
                 تواصل عبر فيسبوك
               </a>
@@ -64,7 +64,7 @@ function Index() {
                 href="https://www.instagram.com/fareedcoffee"
                 target="_blank"
                 rel="noreferrer"
-                className="border border-ink bg-kraft px-7 py-3.5 text-sm text-ink transition-all duration-300 hover:bg-ink hover:text-cream active:scale-95 cursor-pointer font-medium"
+                className="flex items-center justify-center border border-ink bg-kraft px-7 py-3.5 text-sm text-ink transition-all duration-300 hover:bg-ink hover:text-cream active:scale-95 cursor-pointer font-medium text-center"
               >
                 تابعنا على إنستجرام
               </a>
@@ -128,12 +128,12 @@ function Index() {
           ))}
         </div>
 
-        <ScrollReveal className="mt-12 text-center">
+        <ScrollReveal className="mt-10 sm:mt-12 text-center">
           <a
             href="https://www.facebook.com/fareedcoffee"
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center justify-center border border-ink bg-ink px-10 py-4 text-base font-medium text-cream transition-all duration-300 hover:bg-brass hover:text-ink hover:shadow-lg active:scale-95 cursor-pointer"
+            className="inline-flex w-full sm:w-auto items-center justify-center border border-ink bg-ink px-8 sm:px-10 py-3.5 sm:py-4 text-sm sm:text-base font-medium text-cream transition-all duration-300 hover:bg-brass hover:text-ink hover:shadow-lg active:scale-95 cursor-pointer text-center"
           >
             تواصل للاستفسار والطلب
           </a>
