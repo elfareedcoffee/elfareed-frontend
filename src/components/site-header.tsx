@@ -125,23 +125,33 @@ export function SiteHeader() {
               ))}
             </nav>
 
-            <div className="mt-4 pt-3 border-t border-ink/15 flex gap-2">
-              <a
-                href="https://www.facebook.com/fareedcoffee"
-                target="_blank"
-                rel="noreferrer"
-                className="flex-1 py-2 text-center text-xs font-medium border border-ink bg-ink text-cream hover:bg-brass hover:text-ink"
+            <div className="mt-4 pt-3 border-t border-ink/15 flex flex-col gap-2">
+              <div className="flex gap-2">
+                <a
+                  href="https://www.facebook.com/fareedcoffee"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex-1 py-2 text-center text-xs font-medium border border-ink bg-ink text-cream hover:bg-brass hover:text-ink"
+                >
+                  فيسبوك
+                </a>
+                <a
+                  href="https://www.instagram.com/fareedcoffee"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex-1 py-2 text-center text-xs font-medium border border-ink bg-kraft text-ink hover:bg-ink hover:text-cream"
+                >
+                  إنستجرام
+                </a>
+              </div>
+
+              <Link
+                to="/admin"
+                onClick={() => setMobileMenuOpen(false)}
+                className="py-2 text-center text-xs font-bold border border-brass/60 bg-brass/10 text-ink hover:bg-brass hover:text-ink transition-colors"
               >
-                فيسبوك الرسمية
-              </a>
-              <a
-                href="https://www.instagram.com/fareedcoffee"
-                target="_blank"
-                rel="noreferrer"
-                className="flex-1 py-2 text-center text-xs font-medium border border-ink bg-kraft text-ink hover:bg-ink hover:text-cream"
-              >
-                إنستجرام الرسمية
-              </a>
+                ⚙️ لوحة تحكم الإدارة (Admin)
+              </Link>
             </div>
           </div>
         )}

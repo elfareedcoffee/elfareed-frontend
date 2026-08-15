@@ -2,17 +2,31 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Minus, Plus, ShoppingBag } from "lucide-react";
 import { useCart } from "@/lib/cart";
-import type { Product } from "@/data/products";
+import type { AdminProduct } from "@/lib/admin-store";
 
-export function ProductCard({ product }: { product: Product; index: number }) {
+export function ProductCard({ product }: { product: AdminProduct; index: number }) {
   const { add } = useCart();
   const [weightIdx, setWeightIdx] = useState(0);
   const [qty, setQty] = useState(1);
   const w = product.weights[weightIdx]!;
 
   return (
-    <article className="grain card-hover flex h-full flex-col border border-ink bg-cream">
-      <div className="h-2 w-full shrink-0" style={{ backgroundColor: product.marker }} />
+    <article className="grain card-hover flex h-full flex-col border border-ink bg-cream overflow-hidden">
+      {product.image ? (
+        <div className="h-44 w-full overflow-hidden border-b border-ink/20 relative">
+          <img
+            src={product.image}
+            alt={product.name}
+            className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
+          />
+          <div
+            className="absolute top-2 right-2 h-3 w-3 rounded-full border border-cream shadow-xs"
+            style={{ backgroundColor: product.marker }}
+          />
+        </div>
+      ) : (
+        <div className="h-2 w-full shrink-0" style={{ backgroundColor: product.marker }} />
+      )}
       <div className="flex flex-1 flex-col p-5 sm:p-6">
         <div className="flex items-start justify-between">
           <div>
@@ -21,11 +35,13 @@ export function ProductCard({ product }: { product: Product; index: number }) {
               {product.latin} roast
             </p>
           </div>
-          <span
-            className="mt-1 h-6 w-6 shrink-0 rounded-full transition-transform duration-300 hover:scale-125"
-            style={{ backgroundColor: product.marker }}
-            aria-hidden="true"
-          />
+          {!product.image && (
+            <span
+              className="mt-1 h-6 w-6 shrink-0 rounded-full transition-transform duration-300 hover:scale-125"
+              style={{ backgroundColor: product.marker }}
+              aria-hidden="true"
+            />
+          )}
         </div>
 
         <p className="mt-4 text-sm leading-7 text-muted-foreground">{product.desc}</p>

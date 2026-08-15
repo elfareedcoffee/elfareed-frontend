@@ -3,6 +3,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { CheckCircle2, ShoppingBag } from "lucide-react";
 import { useCart } from "@/lib/cart";
+import { useAdminStore } from "@/lib/admin-store";
 import { SiteHeader } from "@/components/site-header";
 import { CONTACT } from "@/data/products";
 
@@ -27,8 +28,10 @@ export const Route = createFileRoute("/checkout")({
 
 function Checkout() {
   const { items, total, clear, setQty } = useCart();
+  const { createOrder, settings } = useAdminStore();
   const [done, setDone] = useState(false);
-  const shipping = items.length ? 40 : 0;
+  const [createdOrderNumber, setCreatedOrderNumber] = useState<string>("");
+  const shipping = items.length ? settings.deliveryFee : 0;
 
   if (done) {
     return (
@@ -39,6 +42,11 @@ function Checkout() {
             <CheckCircle2 className="h-12 w-12" />
           </div>
           <h1 className="font-display text-5xl">تم استلام طلبك بنجاح!</h1>
+          {createdOrderNumber && (
+            <div className="mt-3 inline-block rounded bg-ink px-4 py-1.5 text-sm font-mono font-bold text-cream">
+              رقم الطلب: #{createdOrderNumber}
+            </div>
+          )}
           <p className="mt-4 text-base leading-8 text-muted-foreground">
             هنكلمك خلال وقت قصير على رقمك لتأكيد الطلب وميعاد التوصيل. للتواصل السريع كلمنا على{" "}
             <a
@@ -89,8 +97,28 @@ function Checkout() {
                 toast.error("سلة الطلبات فارغة");
                 return;
               }
+
+              const formData = new FormData(e.currentTarget);
+              const customer = {
+                name: (formData.get("name") as string) || "",
+                phone: (formData.get("phone") as string) || "",
+                address: (formData.get("address") as string) || "",
+                area: (formData.get("area") as string) || "",
+                notes: (formData.get("notes") as string) || "",
+              };
+
+              const newOrd = createOrder({
+                customer,
+                items: [...items],
+                subtotal: total,
+                shipping,
+                total: total + shipping,
+              });
+
+              setCreatedOrderNumber(newOrd.orderNumber);
               clear();
               setDone(true);
+              toast.success(`تم تسجيل طلبك بنجاح برقم #${newOrd.orderNumber}`);
             }}
           >
             {[

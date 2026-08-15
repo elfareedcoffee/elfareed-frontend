@@ -13,6 +13,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "../components/ui/sonner";
 import { CartProvider } from "../lib/cart";
+import { AdminStoreProvider } from "../lib/admin-store";
 
 function NotFoundComponent() {
   return (
@@ -120,10 +121,12 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <CartProvider>
-        <Outlet />
-        <Toaster position="top-center" />
-      </CartProvider>
+      <AdminStoreProvider>
+        <CartProvider>
+          <Outlet />
+          <Toaster position="top-center" />
+        </CartProvider>
+      </AdminStoreProvider>
     </QueryClientProvider>
   );
 }

@@ -3,7 +3,8 @@ import { MapPin, Phone } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { ProductCard } from "@/components/product-card";
 import { ScrollReveal } from "@/components/scroll-reveal";
-import { products, CONTACT } from "@/data/products";
+import { useAdminStore } from "@/lib/admin-store";
+import { CONTACT } from "@/data/products";
 import heroBeans from "@/assets/hero-beans.jpg";
 import storyPour from "@/assets/story-pour.jpg";
 import wholesaleSacks from "@/assets/wholesale-sacks.jpg";
@@ -29,6 +30,8 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
+  const { products } = useAdminStore();
+  const activeProducts = products.filter((p) => p.available !== false);
   return (
     <div className="paper min-h-screen">
       <SiteHeader />
@@ -82,7 +85,7 @@ function Index() {
 
             {/* roast tags — aligned straight on the exact same horizontal line */}
             <ul className="mt-12 flex flex-wrap items-center gap-x-8 gap-y-3 text-sm">
-              {products.map((p) => (
+              {activeProducts.map((p) => (
                 <li
                   key={p.id}
                   className="flex items-center gap-2 font-medium transition-transform duration-200 hover:scale-105"
@@ -136,7 +139,7 @@ function Index() {
         </ScrollReveal>
 
         <div className="mt-12 grid gap-7 items-stretch sm:grid-cols-2 lg:grid-cols-4">
-          {products.map((p, i) => (
+          {activeProducts.map((p, i) => (
             <ScrollReveal key={p.id} delay={i * 120}>
               <ProductCard product={p} index={i} />
             </ScrollReveal>
