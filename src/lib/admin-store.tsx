@@ -42,7 +42,8 @@ type AdminStoreContextValue = {
   settings: StoreSettings;
   // Product actions
   updatePrice: (productId: string, grams: number, newPrice: number) => void;
-  updateProductImage: (productId: string, imageUrl: string) => void;
+  updateProductImage: (productId: string, imageUrl?: string | undefined) => void;
+  removeProductImage: (productId: string) => void;
   updateProduct: (productId: string, updates: Partial<AdminProduct>) => void;
   addProduct: (product: Omit<AdminProduct, "id"> & { id?: string }) => void;
   deleteProduct: (productId: string) => void;
@@ -284,8 +285,23 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
     );
   };
 
-  const updateProductImage = (productId: string, imageUrl: string) => {
-    setProducts((prev) => prev.map((p) => (p.id === productId ? { ...p, image: imageUrl } : p)));
+  const updateProductImage = (productId: string, imageUrl?: string | undefined) => {
+    setProducts((prev) =>
+      prev.map((p) => {
+        if (p.id !== productId) return p;
+        const updated = { ...p };
+        if (imageUrl && imageUrl.trim()) {
+          updated.image = imageUrl;
+        } else {
+          delete updated.image;
+        }
+        return updated;
+      }),
+    );
+  };
+
+  const removeProductImage = (productId: string) => {
+    updateProductImage(productId, undefined);
   };
 
   const updateProduct = (productId: string, updates: Partial<AdminProduct>) => {
@@ -439,6 +455,7 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
       settings,
       updatePrice,
       updateProductImage,
+      removeProductImage,
       updateProduct,
       addProduct,
       deleteProduct,

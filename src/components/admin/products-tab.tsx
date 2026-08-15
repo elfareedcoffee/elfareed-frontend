@@ -19,6 +19,7 @@ export function ProductsTab() {
     products,
     updatePrice,
     updateProductImage,
+    removeProductImage,
     updateProduct,
     addProduct,
     deleteProduct,
@@ -148,13 +149,33 @@ export function ProductsTab() {
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-center gap-3">
                   {/* Product Image Thumbnail or Marker Dot */}
-                  <div className="relative group">
+                  <div className="relative group shrink-0">
                     {product.image ? (
-                      <img
-                        src={product.image}
-                        alt={product.name}
-                        className="h-16 w-16 rounded border border-ink/30 object-cover shadow-xs"
-                      />
+                      <>
+                        <img
+                          src={product.image}
+                          alt={product.name}
+                          className="h-16 w-16 rounded border border-ink/30 object-cover shadow-xs"
+                        />
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (
+                              confirm(
+                                `هل ترغب في إزالة صورة تحميصة ${product.name} والعودة للشكل الافتراضي؟`,
+                              )
+                            ) {
+                              removeProductImage(product.id);
+                              toast.info(`تمت إزالة صورة ${product.name}`);
+                            }
+                          }}
+                          className="absolute -top-1.5 -start-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-white text-[11px] font-bold shadow-md hover:bg-red-700 transition-transform active:scale-90 z-10 cursor-pointer"
+                          title="حذف الصورة"
+                        >
+                          ✕
+                        </button>
+                      </>
                     ) : (
                       <div
                         className="flex h-16 w-16 items-center justify-center rounded border border-ink/30 text-white font-bold"
@@ -283,21 +304,37 @@ export function ProductsTab() {
               </div>
             </div>
 
-            {/* Quick Image Upload button in card */}
+            {/* Quick Image Upload & Remove button in card */}
             <div className="mt-5 flex items-center justify-between border-t border-ink/15 pt-3">
               <span className="text-[11px] text-muted-foreground">
                 {product.image ? "صورة مخصصة مرفوعة ✓" : "يستخدم لون التحميصة الافتراضي"}
               </span>
-              <button
-                onClick={() => {
-                  setImageUploadTargetId(product.id);
-                  fileInputRef.current?.click();
-                }}
-                className="inline-flex items-center gap-1 text-xs font-bold text-brass hover:text-ink cursor-pointer"
-              >
-                <Upload className="h-3.5 w-3.5" />
-                {product.image ? "تغيير الصورة" : "رفع صورة للمنتج"}
-              </button>
+              <div className="flex items-center gap-2.5">
+                {product.image && (
+                  <button
+                    onClick={() => {
+                      if (confirm(`هل ترغب في إزالة صورة تحميصة ${product.name}؟`)) {
+                        removeProductImage(product.id);
+                        toast.info(`تمت إزالة صورة ${product.name}`);
+                      }
+                    }}
+                    className="inline-flex items-center gap-1 text-xs font-bold text-red-600 hover:text-red-800 transition-colors cursor-pointer"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    حذف الصورة
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                    setImageUploadTargetId(product.id);
+                    fileInputRef.current?.click();
+                  }}
+                  className="inline-flex items-center gap-1 text-xs font-bold text-brass hover:text-ink cursor-pointer"
+                >
+                  <Upload className="h-3.5 w-3.5" />
+                  {product.image ? "تغيير الصورة" : "رفع صورة"}
+                </button>
+              </div>
             </div>
           </div>
         ))}
@@ -394,11 +431,21 @@ export function ProductsTab() {
                     className="text-xs file:mr-2 file:py-1.5 file:px-3 file:border file:border-ink file:bg-ink file:text-cream file:cursor-pointer"
                   />
                   {newProdImage && (
-                    <img
-                      src={newProdImage}
-                      alt="معاينة"
-                      className="h-10 w-10 rounded border border-ink object-cover"
-                    />
+                    <div className="relative inline-block shrink-0">
+                      <img
+                        src={newProdImage}
+                        alt="معاينة"
+                        className="h-12 w-12 rounded border border-ink object-cover shadow-xs"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setNewProdImage("")}
+                        className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-white text-[10px] shadow-sm hover:bg-red-700 cursor-pointer"
+                        title="إزالة الصورة"
+                      >
+                        ✕
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -532,6 +579,50 @@ export function ProductsTab() {
                   onChange={(e) => setEditingProduct({ ...editingProduct, desc: e.target.value })}
                   className="w-full border border-ink/30 bg-background px-3 py-2 outline-none focus:border-brass"
                 />
+              </div>
+
+              {/* Image Manager in Edit Modal */}
+              <div>
+                <label className="block font-bold mb-1">صورة المنتج</label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = (ev) => {
+                        setEditingProduct({
+                          ...editingProduct,
+                          image: ev.target?.result as string,
+                        });
+                      };
+                      reader.readAsDataURL(file);
+                    }}
+                    className="text-xs file:mr-2 file:py-1.5 file:px-3 file:border file:border-ink file:bg-ink file:text-cream file:cursor-pointer"
+                  />
+                  {editingProduct.image && (
+                    <div className="flex items-center gap-2">
+                      <img
+                        src={editingProduct.image}
+                        alt="معاينة"
+                        className="h-12 w-12 rounded border border-ink object-cover shadow-xs"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingProduct({ ...editingProduct, image: undefined });
+                          removeProductImage(editingProduct.id);
+                          toast.info(`تم حذف صورة ${editingProduct.name}`);
+                        }}
+                        className="text-xs font-bold text-red-600 hover:text-red-800 underline cursor-pointer"
+                      >
+                        حذف الصورة
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="flex items-center justify-end gap-2 border-t border-ink/20 pt-4 mt-6">
