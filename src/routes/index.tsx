@@ -53,10 +53,20 @@ function Index() {
 
             <div className="mt-8 sm:mt-9 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
               <a
+                href="#products"
+                onClick={(e) => {
+                  e.preventDefault();
+                  document.getElementById("products")?.scrollIntoView({ behavior: "smooth" });
+                }}
+                className="flex items-center justify-center border border-ink bg-ink px-7 py-3.5 text-sm text-cream transition-all duration-300 hover:bg-brass hover:text-ink hover:shadow-md active:scale-95 cursor-pointer font-medium text-center"
+              >
+                اطلب أونلاين
+              </a>
+              <a
                 href="https://www.facebook.com/fareedcoffee"
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center justify-center border border-ink bg-ink px-7 py-3.5 text-sm text-cream transition-all duration-300 hover:bg-brass hover:text-ink hover:shadow-md active:scale-95 cursor-pointer font-medium text-center"
+                className="flex items-center justify-center border border-ink bg-cream px-7 py-3.5 text-sm text-ink transition-all duration-300 hover:bg-ink hover:text-cream active:scale-95 cursor-pointer font-medium text-center"
               >
                 تواصل عبر فيسبوك
               </a>
@@ -108,7 +118,7 @@ function Index() {
         </div>
       </section>
 
-      {/* PRODUCTS CATALOG */}
+      {/* PRODUCTS CATALOG & ORDERING */}
       <section id="products" className="mx-auto max-w-6xl px-5 py-20">
         <ScrollReveal>
           <div className="flex flex-wrap items-end justify-between gap-4 border-b border-ink pb-5">
@@ -119,7 +129,8 @@ function Index() {
               <h2 className="font-display text-5xl leading-tight md:text-6xl">التحميصات</h2>
             </div>
             <p className="max-w-sm text-sm text-muted-foreground">
-              أربع درجات تحميص مميزة. تصفح النكهات والتفاصيل واستفسر مباشرة عبر صفحاتنا الرسمية.
+              أربع درجات تحميص مميزة. اختار الوزن والكمية وأضفها لطلبك — التوصيل لجميع مناطق
+              القاهرة.
             </p>
           </div>
         </ScrollReveal>
