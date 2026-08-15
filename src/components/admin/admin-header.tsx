@@ -55,7 +55,7 @@ export function AdminHeader() {
           {/* Store status badge toggle */}
           <button
             onClick={() => updateSettings({ isOpen: !settings.isOpen })}
-            className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium border transition-colors ${
+            className={`inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 text-xs font-medium border transition-colors cursor-pointer ${
               settings.isOpen
                 ? "border-emerald-600 bg-emerald-50 text-emerald-800"
                 : "border-red-600 bg-red-50 text-red-800"
@@ -67,7 +67,10 @@ export function AdminHeader() {
                 settings.isOpen ? "bg-emerald-500 animate-pulse" : "bg-red-500"
               }`}
             />
-            {settings.isOpen ? "المتجر مفتوح" : "المتجر مغلق مؤقتًا"}
+            <span className="hidden sm:inline">
+              {settings.isOpen ? "المتجر مفتوح" : "المتجر مغلق مؤقتًا"}
+            </span>
+            <span className="inline sm:hidden">{settings.isOpen ? "مفتوح" : "مغلق"}</span>
           </button>
 
           {/* Pending orders alert badge */}
@@ -81,10 +84,11 @@ export function AdminHeader() {
           {/* Storefront button */}
           <Link
             to="/"
-            className="inline-flex items-center gap-1.5 border border-ink bg-ink px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium text-cream transition-all hover:bg-brass hover:text-ink active:scale-95"
+            className="inline-flex items-center gap-1 sm:gap-1.5 border border-ink bg-ink px-2.5 sm:px-4 py-1 sm:py-1.5 text-xs sm:text-sm font-medium text-cream transition-all hover:bg-brass hover:text-ink active:scale-95 shrink-0"
           >
-            <Store className="h-4 w-4" />
-            <span>عرض المتجر</span>
+            <Store className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">عرض المتجر</span>
+            <span className="inline sm:hidden">المتجر</span>
             <ExternalLink className="h-3 w-3 opacity-70" />
           </Link>
         </div>

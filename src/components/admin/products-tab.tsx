@@ -246,13 +246,13 @@ export function ProductsTab() {
                   </span>
                 </p>
 
-                <div className="grid grid-cols-3 gap-2.5">
+                <div className="grid grid-cols-3 gap-1.5 sm:gap-2.5">
                   {product.weights.map((w) => (
                     <div
                       key={w.grams}
-                      className="border border-ink/20 bg-background p-2.5 text-center"
+                      className="border border-ink/20 bg-background p-2 sm:p-2.5 text-center"
                     >
-                      <span className="block text-xs text-muted-foreground font-medium">
+                      <span className="block text-[11px] sm:text-xs text-muted-foreground font-medium">
                         {w.label}
                       </span>
                       <div className="mt-1 flex items-center justify-center gap-1">
@@ -273,9 +273,9 @@ export function ProductsTab() {
                               (e.target as HTMLInputElement).blur();
                             }
                           }}
-                          className="w-16 border border-ink/30 bg-cream text-center font-bold font-mono text-sm py-1 outline-none focus:border-brass"
+                          className="w-full max-w-[4rem] sm:max-w-[4.5rem] border border-ink/30 bg-cream text-center font-bold font-mono text-xs sm:text-sm py-1 px-1 outline-none focus:border-brass"
                         />
-                        <span className="text-xs text-muted-foreground">ج.م</span>
+                        <span className="text-[10px] sm:text-xs text-muted-foreground">ج.م</span>
                       </div>
                     </div>
                   ))}

@@ -40,7 +40,7 @@ function AdminPage() {
 
       <main className="mx-auto max-w-7xl px-4 sm:px-6 pt-8">
         {/* Navigation Tabs Bar */}
-        <div className="flex overflow-x-auto border-b border-ink/25 gap-2 pb-px mb-8 scrollbar-none">
+        <div className="flex overflow-x-auto border-b border-ink/25 gap-1.5 sm:gap-2 pb-px mb-6 sm:mb-8 scrollbar-none touch-pan-x -mx-4 px-4 sm:mx-0 sm:px-0">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.key;
@@ -48,13 +48,15 @@ function AdminPage() {
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-2.5 px-5 py-3 text-xs sm:text-sm font-bold transition-all border-b-2 whitespace-nowrap cursor-pointer ${
+                className={`flex items-center gap-2 px-3.5 py-2.5 sm:px-5 sm:py-3 text-xs sm:text-sm font-bold transition-all border-b-2 whitespace-nowrap cursor-pointer shrink-0 ${
                   isActive
-                    ? "border-brass text-ink bg-cream/70"
-                    : "border-transparent text-muted-foreground hover:text-foreground hover:bg-cream/30"
+                    ? "border-brass text-ink bg-cream/80 shadow-xs"
+                    : "border-transparent text-muted-foreground hover:text-foreground hover:bg-cream/40"
                 }`}
               >
-                <Icon className={`h-4 w-4 ${isActive ? "text-brass" : "text-muted-foreground"}`} />
+                <Icon
+                  className={`h-4 w-4 shrink-0 ${isActive ? "text-brass" : "text-muted-foreground"}`}
+                />
                 <span>{tab.label}</span>
                 {tab.badge !== undefined && (
                   <span

@@ -89,8 +89,115 @@ export function OrdersTab() {
         </div>
       </div>
 
-      {/* Orders Table */}
-      <div className="border border-ink/30 bg-cream shadow-sm overflow-hidden">
+      {/* Mobile Orders Cards View (md:hidden) */}
+      <div className="space-y-3 md:hidden">
+        {filteredOrders.length === 0 ? (
+          <div className="border border-ink/30 bg-cream p-8 text-center text-xs text-muted-foreground">
+            لا توجد طلبات مطابقة للبحث أو الفلتر المختار.
+          </div>
+        ) : (
+          filteredOrders.map((order) => (
+            <div
+              key={order.id}
+              className="border border-ink/30 bg-cream p-4 shadow-xs space-y-3 transition-colors"
+            >
+              {/* Card Header: Order #, Status, Date */}
+              <div className="flex items-center justify-between border-b border-ink/15 pb-2.5">
+                <div>
+                  <span className="font-mono font-bold text-sm">#{order.orderNumber}</span>
+                  <p className="text-[11px] text-muted-foreground">
+                    {new Date(order.createdAt).toLocaleDateString("ar-EG", {
+                      month: "short",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </p>
+                </div>
+
+                <select
+                  value={order.status}
+                  onChange={(e) => {
+                    const newStatus = e.target.value as OrderStatus;
+                    updateOrderStatus(order.id, newStatus);
+                    toast.success(`تم تغيير حالة الطلب ${order.orderNumber} إلى ${newStatus}`);
+                  }}
+                  className={`rounded border px-2 py-1 text-xs font-semibold outline-none ${getStatusBadge(
+                    order.status,
+                  )}`}
+                >
+                  {STATUS_OPTIONS.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Customer & Area */}
+              <div className="flex items-start justify-between text-xs">
+                <div>
+                  <p className="font-bold text-foreground">{order.customer.name}</p>
+                  <p className="text-muted-foreground flex items-center gap-1 mt-0.5">
+                    <MapPin className="h-3 w-3 text-brass shrink-0" />
+                    {order.customer.area}
+                  </p>
+                </div>
+                <a
+                  href={`tel:${order.customer.phone}`}
+                  dir="ltr"
+                  className="font-mono text-xs font-bold text-brass bg-background px-2 py-1 border border-ink/20 flex items-center gap-1"
+                >
+                  <Phone className="h-3 w-3" />
+                  {order.customer.phone}
+                </a>
+              </div>
+
+              {/* Items summary */}
+              <div className="bg-background/80 p-2 border border-ink/10 text-xs">
+                <p className="text-muted-foreground font-medium">
+                  {order.items.map((i) => `${i.name} (${i.weight} × ${i.qty})`).join(" + ")}
+                </p>
+              </div>
+
+              {/* Card Footer: Total & Actions */}
+              <div className="flex items-center justify-between border-t border-ink/15 pt-2.5">
+                <div className="text-xs">
+                  <span className="text-muted-foreground">الإجمالي: </span>
+                  <span className="font-bold font-mono text-sm text-foreground">
+                    {order.total} ج.م
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setActiveOrder(order)}
+                    className="inline-flex items-center gap-1 border border-ink bg-ink px-3 py-1.5 text-xs font-bold text-cream hover:bg-brass hover:text-ink transition-colors cursor-pointer"
+                  >
+                    <Eye className="h-3.5 w-3.5" />
+                    التفاصيل
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (confirm(`هل أنت متأكد من حذف الطلب ${order.orderNumber}؟`)) {
+                        deleteOrder(order.id);
+                        toast.info(`تم حذف الطلب ${order.orderNumber}`);
+                      }
+                    }}
+                    className="p-1.5 border border-red-300 text-red-600 hover:bg-red-600 hover:text-white transition-colors cursor-pointer rounded"
+                    title="حذف الطلب"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Desktop Orders Table (hidden on mobile, visible on md+) */}
+      <div className="hidden md:block border border-ink/30 bg-cream shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-right text-xs sm:text-sm">
             <thead className="border-b border-ink/20 bg-background/60 text-muted-foreground text-xs">
