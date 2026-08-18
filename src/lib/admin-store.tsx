@@ -256,15 +256,39 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
 
   const fetchAdminData = async () => {
     try {
-      const headers = getAdminHeaders();
-      const productsRes = await fetch("/api/v1/admin/products/", { headers });
+      const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
 
-      if (productsRes.ok) {
-        const data = await productsRes.json();
-        if (Array.isArray(data) && data.length > 0) {
-          setProducts(data.map(mapBackendProduct));
+      if (token) {
+        const headers = getAdminHeaders();
+        const productsRes = await fetch("/api/v1/admin/products/", { headers });
+
+        if (productsRes.ok) {
+          const data = await productsRes.json();
+          if (Array.isArray(data) && data.length > 0) {
+            setProducts(data.map(mapBackendProduct));
+          }
+        } else if (productsRes.status === 401) {
+          localStorage.removeItem("admin_token");
+          localStorage.removeItem("admin_csrf");
+          // Fall back to public products
+          const publicRes = await fetch("/api/v1/public/products/");
+          if (publicRes.ok) {
+            const data = await publicRes.json();
+            if (Array.isArray(data) && data.length > 0) {
+              setProducts(data.map(mapBackendProduct));
+            }
+          }
+        }
+
+        const ordersRes = await fetch("/api/v1/admin/orders/?size=100", { headers });
+        if (ordersRes.ok) {
+          const ordersData = await ordersRes.json();
+          if (ordersData.items) {
+            setOrders(ordersData.items.map(mapBackendOrder));
+          }
         }
       } else {
+        // Public Storefront: Only fetch public products
         const publicRes = await fetch("/api/v1/public/products/");
         if (publicRes.ok) {
           const data = await publicRes.json();
@@ -273,16 +297,8 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
           }
         }
       }
-
-      const ordersRes = await fetch("/api/v1/admin/orders/?size=100", { headers });
-      if (ordersRes.ok) {
-        const ordersData = await ordersRes.json();
-        if (ordersData.items) {
-          setOrders(ordersData.items.map(mapBackendOrder));
-        }
-      }
     } catch (e) {
-      console.error("Failed to fetch admin store data", e);
+      console.error("Failed to fetch store data", e);
     }
   };
 
@@ -397,6 +413,11 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
     newProd: Omit<AdminProduct, "id"> & { id?: string },
     imageFile?: File,
   ): Promise<AdminProduct> => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
+    if (!token) {
+      throw new Error("يجب تسجيل الدخول كمسؤول أولاً من صفحة لوحة التحكم (/admin) لحفظ التحميصة");
+    }
+
     const tempId = newProd.id || `roast-${Date.now()}`;
     const productToAdd: AdminProduct = {
       ...newProd,
@@ -450,6 +471,11 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
     });
 
     if (!res.ok) {
+      if (res.status === 401) {
+        localStorage.removeItem("admin_token");
+        localStorage.removeItem("admin_csrf");
+        throw new Error("انتهت جلسة تسجيل الدخول، يرجى إعادة تسجيل الدخول للوحة التحكم (/admin)");
+      }
       const errData = await res.json().catch(() => ({}));
       const message = errData?.detail || errData?.message || "فشل حفظ التحميصة في الخادم";
       throw new Error(typeof message === "string" ? message : JSON.stringify(message));
