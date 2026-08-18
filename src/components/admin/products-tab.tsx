@@ -37,9 +37,11 @@ export function ProductsTab() {
   const [newProdDesc, setNewProdDesc] = useState("");
   const [newProdMarker, setNewProdMarker] = useState("#C9933B");
   const [newProdImage, setNewProdImage] = useState("");
+  const [newProdImageFile, setNewProdImageFile] = useState<File | null>(null);
   const [price250, setPrice250] = useState("150");
   const [price500, setPrice500] = useState("280");
   const [price1000, setPrice1000] = useState("530");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleImageFileChange = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -48,57 +50,69 @@ export function ProductsTab() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 3 * 1024 * 1024) {
-      toast.error("حجم الصورة كبير جداً (الحد الأقصى 3 ميجابايت)");
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("حجم الصورة كبير جداً (الحد الأقصى 5 ميجابايت)");
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (uploadEvent) => {
-      const base64 = uploadEvent.target?.result as string;
-      if (targetProductId) {
-        updateProductImage(targetProductId, base64);
-        toast.success("تم تحديث صورة المنتج بنجاح");
-      } else {
-        setNewProdImage(base64);
-      }
-    };
-    reader.readAsDataURL(file);
+    if (targetProductId) {
+      updateProductImage(targetProductId, file);
+      toast.success("تم تحديث ورفع صورة المنتج بنجاح");
+    } else {
+      setNewProdImageFile(file);
+      const reader = new FileReader();
+      reader.onload = (uploadEvent) => {
+        setNewProdImage(uploadEvent.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
-  const handleCreateProduct = (e: React.FormEvent) => {
+  const handleCreateProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newProdName.trim() || !newProdLatin.trim()) {
       toast.error("يرجى ملء اسم المنتج بالعربي والإنجليزي");
       return;
     }
 
-    addProduct({
-      name: newProdName.trim(),
-      latin: newProdLatin.trim(),
-      note: newProdNote.trim() || "نكهة متوازنة · قوام غني",
-      desc: newProdDesc.trim() || "تحميص خاص من حبوب البن المنتقاة بعناية.",
-      marker: newProdMarker,
-      image: newProdImage || undefined,
-      available: true,
-      weights: [
-        { label: "٢٥٠ جم", grams: 250, price: Number(price250) || 150 },
-        { label: "٥٠٠ جم", grams: 500, price: Number(price500) || 280 },
-        { label: "١ كيلو", grams: 1000, price: Number(price1000) || 530 },
-      ],
-    });
+    setIsSubmitting(true);
+    try {
+      await addProduct(
+        {
+          name: newProdName.trim(),
+          latin: newProdLatin.trim(),
+          note: newProdNote.trim() || "نكهة متوازنة · قوام غني",
+          desc: newProdDesc.trim() || "تحميص خاص من حبوب البن المنتقاة بعناية.",
+          marker: newProdMarker,
+          image: newProdImage || undefined,
+          available: true,
+          weights: [
+            { label: "٢٥٠ جم", grams: 250, price: Number(price250) || 150 },
+            { label: "٥٠٠ جم", grams: 500, price: Number(price500) || 280 },
+            { label: "١ كيلو", grams: 1000, price: Number(price1000) || 530 },
+          ],
+        },
+        newProdImageFile || undefined,
+      );
 
-    toast.success(`تمت إضافة ${newProdName} بنجاح إلى قائمة التحميصات!`);
-    setIsAddModalOpen(false);
-    // Reset form
-    setNewProdName("");
-    setNewProdLatin("");
-    setNewProdNote("");
-    setNewProdDesc("");
-    setNewProdImage("");
-    setPrice250("150");
-    setPrice500("280");
-    setPrice1000("530");
+      toast.success(`تمت إضافة ${newProdName} بنجاح وحفظها في قاعدة البيانات!`);
+      setIsAddModalOpen(false);
+      // Reset form
+      setNewProdName("");
+      setNewProdLatin("");
+      setNewProdNote("");
+      setNewProdDesc("");
+      setNewProdImage("");
+      setNewProdImageFile(null);
+      setPrice250("150");
+      setPrice500("280");
+      setPrice1000("530");
+    } catch (err) {
+      console.error(err);
+      toast.error("حدث خطأ أثناء حفظ المنتج");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -498,9 +512,10 @@ export function ProductsTab() {
                 </button>
                 <button
                   type="submit"
-                  className="border border-ink bg-ink px-6 py-2 text-xs font-bold text-cream hover:bg-brass hover:text-ink transition-colors cursor-pointer"
+                  disabled={isSubmitting}
+                  className="border border-ink bg-ink px-6 py-2 text-xs font-bold text-cream hover:bg-brass hover:text-ink transition-colors disabled:opacity-60 cursor-pointer"
                 >
-                  حفظ وإضافة للمتجر
+                  {isSubmitting ? "جاري الحفظ..." : "حفظ وإضافة للمتجر"}
                 </button>
               </div>
             </form>

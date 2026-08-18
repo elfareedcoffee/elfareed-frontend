@@ -110,20 +110,28 @@ function Checkout() {
                   notes: (formData.get("notes") as string) || "",
                 };
 
-                // 1. Clear cart just in case
-                await fetch("/api/v1/public/cart/", { method: "DELETE" }).catch(() => {});
-
-                // 2. Add each item to the backend cart
+                // 1. Add each item to the backend cart, tracking cart_id
+                let lastCartId: string | null = null;
                 for (const item of items) {
                   if (!item.variantId) continue;
-                  await fetch("/api/v1/public/cart/items", {
+                  const cartHeaders: Record<string, string> = { "Content-Type": "application/json" };
+                  if (lastCartId) cartHeaders["x-cart-id"] = lastCartId;
+
+                  const cartRes = await fetch("/api/v1/public/cart/items", {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: cartHeaders,
                     body: JSON.stringify({
                       product_variant_id: item.variantId,
                       quantity: item.qty
                     })
                   });
+
+                  if (cartRes.ok) {
+                    const cartData = await cartRes.json();
+                    if (cartData?.id) {
+                      lastCartId = cartData.id;
+                    }
+                  }
                 }
 
                 let apiPhone = customer.phone.trim();
@@ -131,10 +139,13 @@ function Checkout() {
                   apiPhone = "+20" + apiPhone.substring(1);
                 }
 
-                // 3. Submit order
+                // 2. Submit order with tracked cart_id
+                const orderHeaders: Record<string, string> = { "Content-Type": "application/json" };
+                if (lastCartId) orderHeaders["x-cart-id"] = lastCartId;
+
                 const res = await fetch("/api/v1/public/orders/", {
                   method: "POST",
-                  headers: { "Content-Type": "application/json" },
+                  headers: orderHeaders,
                   body: JSON.stringify({
                     customer_name: customer.name,
                     customer_phone: apiPhone,
@@ -166,7 +177,7 @@ function Checkout() {
                   toast.success(`تم تسجيل طلبك بنجاح برقم #${data.order_number}`);
                 } else {
                   const errData = await res.json();
-                  toast.error(errData.detail?.message || "حدث خطأ أثناء تسجيل الطلب");
+                  toast.error(errData.detail?.message || errData.error?.message || "حدث خطأ أثناء تسجيل الطلب");
                 }
               } catch (err) {
                 console.error("Checkout failed:", err);

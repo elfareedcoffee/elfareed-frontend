@@ -40,16 +40,16 @@ type AdminStoreContextValue = {
   products: AdminProduct[];
   orders: Order[];
   settings: StoreSettings;
-  updatePrice: (productId: string, grams: number, newPrice: number) => void;
-  updateProductImage: (productId: string, imageUrl?: string | undefined) => void;
-  removeProductImage: (productId: string) => void;
-  updateProduct: (productId: string, updates: Partial<AdminProduct>) => void;
-  addProduct: (product: Omit<AdminProduct, "id"> & { id?: string }) => void;
+  updatePrice: (productId: string, grams: number, newPrice: number) => Promise<void>;
+  updateProductImage: (productId: string, fileOrUrl?: File | string | undefined) => Promise<void>;
+  removeProductImage: (productId: string) => Promise<void>;
+  updateProduct: (productId: string, updates: Partial<AdminProduct>) => Promise<void>;
+  addProduct: (product: Omit<AdminProduct, "id"> & { id?: string }, imageFile?: File) => Promise<AdminProduct | undefined>;
   deleteProduct: (productId: string) => void;
-  toggleProductAvailability: (productId: string) => void;
+  toggleProductAvailability: (productId: string) => Promise<void>;
   createOrder: (data: any) => Order;
-  updateOrderStatus: (orderId: string, status: OrderStatus) => void;
-  deleteOrder: (orderId: string) => void;
+  updateOrderStatus: (orderId: string, status: OrderStatus) => Promise<void>;
+  deleteOrder: (orderId: string) => Promise<void>;
   updateSettings: (updates: Partial<StoreSettings>) => void;
   resetToDefaults: () => void;
   analytics: {
@@ -74,6 +74,22 @@ const INITIAL_SETTINGS: StoreSettings = {
   salesPhone: "01110583020",
   wholesalePhones: ["01020073246", "01005642565"],
 };
+
+const INITIAL_PRODUCTS: AdminProduct[] = defaultProducts.map(p => ({
+  id: p.id,
+  name: p.name,
+  desc: p.desc,
+  latin: p.latin,
+  note: p.note,
+  marker: p.marker,
+  weights: p.weights.map(w => ({
+    id: w.id,
+    label: w.label,
+    grams: w.grams,
+    price: w.price
+  })),
+  available: true
+}));
 
 function mapOrderStatus(status: string): OrderStatus {
   switch (status) {
@@ -184,7 +200,7 @@ function mapBackendProduct(p: any): AdminProduct {
 }
 
 export function AdminStoreProvider({ children }: { children: ReactNode }) {
-  const [products, setProducts] = useState<AdminProduct[]>([]);
+  const [products, setProducts] = useState<AdminProduct[]>(INITIAL_PRODUCTS);
   const [orders, setOrders] = useState<Order[]>([]);
 
   const [settings, setSettings] = useState<StoreSettings>(() => {
@@ -212,7 +228,7 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
 
         if (productsRes.ok) {
           const data = await productsRes.json();
-          if (Array.isArray(data)) {
+          if (Array.isArray(data) && data.length > 0) {
              setProducts(data.map(mapBackendProduct));
           }
           
@@ -227,7 +243,7 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
           const publicRes = await fetch("/api/v1/public/products/");
           if (publicRes.ok) {
             const data = await publicRes.json();
-            if (Array.isArray(data)) {
+            if (Array.isArray(data) && data.length > 0) {
                setProducts(data.map(mapBackendProduct));
             }
           }
@@ -240,7 +256,6 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const updatePrice = async (productId: string, grams: number, newPrice: number) => {
-    // Optimistic UI update
     setProducts((prev) =>
       prev.map((p) => {
         if (p.id !== productId) return p;
@@ -268,23 +283,43 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const updateProductImage = (productId: string, imageUrl?: string | undefined) => {
+  const updateProductImage = async (productId: string, fileOrUrl?: File | string | undefined) => {
+    if (fileOrUrl instanceof File) {
+      const formData = new FormData();
+      formData.append("file", fileOrUrl);
+      try {
+        const res = await fetch(`/api/v1/admin/products/${productId}/image`, {
+          method: "POST",
+          body: formData
+        });
+        if (res.ok) {
+          const updated = await res.json();
+          setProducts(prev => prev.map(p => p.id === productId ? mapBackendProduct(updated) : p));
+        }
+      } catch (e) {
+        console.error("Failed to upload product image", e);
+      }
+    } else if (typeof fileOrUrl === "string") {
+      setProducts((prev) =>
+        prev.map((p) => (p.id === productId ? { ...p, image: fileOrUrl } : p))
+      );
+    }
+  };
+
+  const removeProductImage = async (productId: string) => {
     setProducts((prev) =>
       prev.map((p) => {
         if (p.id !== productId) return p;
         const updated = { ...p };
-        if (imageUrl && imageUrl.trim()) {
-          updated.image = imageUrl;
-        } else {
-          delete updated.image;
-        }
+        delete updated.image;
         return updated;
-      }),
+      })
     );
-  };
-
-  const removeProductImage = (productId: string) => {
-    updateProductImage(productId, undefined);
+    try {
+      await fetch(`/api/v1/admin/products/${productId}/image`, { method: "DELETE" });
+    } catch (e) {
+      console.error("Failed to delete product image", e);
+    }
   };
 
   const updateProduct = async (productId: string, updates: Partial<AdminProduct>) => {
@@ -317,7 +352,10 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const addProduct = async (newProd: Omit<AdminProduct, "id"> & { id?: string }) => {
+  const addProduct = async (
+    newProd: Omit<AdminProduct, "id"> & { id?: string },
+    imageFile?: File
+  ): Promise<AdminProduct | undefined> => {
     const tempId = newProd.id || `roast-${Date.now()}`;
     const productToAdd: AdminProduct = {
       ...newProd,
@@ -353,9 +391,10 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
         }],
         variants: productToAdd.weights.map(w => ({
           weight_grams: w.grams,
-          grind_type: "ESPRESSO",
+          grind_type: "TURKISH",
           price: w.price,
-          stock_quantity: 100
+          stock_quantity: 100,
+          is_active: true
         }))
       };
 
@@ -366,18 +405,31 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
       });
       
       if (res.ok) {
-        const createdProduct = await res.json();
-        // Replace temp product with real product from API
-        setProducts((prev) => prev.map((p) => p.id === tempId ? mapBackendProduct(createdProduct) : p));
+        let createdProduct = await res.json();
+        
+        if (imageFile) {
+          const imgData = new FormData();
+          imgData.append("file", imageFile);
+          const imgRes = await fetch(`/api/v1/admin/products/${createdProduct.id}/image`, {
+            method: "POST",
+            body: imgData
+          });
+          if (imgRes.ok) {
+            createdProduct = await imgRes.json();
+          }
+        }
+        
+        const mapped = mapBackendProduct(createdProduct);
+        setProducts((prev) => prev.map((p) => p.id === tempId ? mapped : p));
+        return mapped;
       }
     } catch (e) {
       console.error("Failed to create product", e);
     }
+    return undefined;
   };
 
   const deleteProduct = (productId: string) => {
-    // Currently backend doesn't support deleting, but we can deactivate.
-    // For pure delete, we'd need a DELETE route. We just remove it from UI.
     setProducts((prev) => prev.filter((p) => p.id !== productId));
   };
 
