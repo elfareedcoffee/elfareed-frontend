@@ -82,6 +82,18 @@ const INITIAL_SETTINGS: StoreSettings = {
   salesPhone: "01110583020",
   wholesalePhones: ["01020073246", "01005642565"],
 };
+// In production (Cloudflare Pages), requests to /api/v1/... hit the frontend itself,
+// not the backend. vercel.json rewrites only work on Vercel.
+// So we must use the full backend URL for all API calls in production.
+export const API_BASE =
+  typeof window !== "undefined" && window.location.hostname !== "localhost"
+    ? "https://elfareed-backend.vercel.app"
+    : "";
+
+/** Build a full API URL, prepending the backend origin in production */
+export function api(path: string): string {
+  return `${API_BASE}${path}`;
+}
 
 export function getAdminHeaders(
   extraHeaders: Record<string, string> = {},
@@ -268,7 +280,7 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
   }, [settings]);
 
   const login = async (username: string, password: string) => {
-    const res = await fetch("/api/v1/admin/auth/login", {
+    const res = await fetch(api("/api/v1/admin/auth/login"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password }),
@@ -312,8 +324,8 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
       if (activeToken) {
         const headers = getAdminHeaders({}, activeToken);
         const [productsRes, ordersRes] = await Promise.allSettled([
-          fetch("/api/v1/admin/products/", { headers }),
-          fetch("/api/v1/admin/orders/?size=100", { headers }),
+          fetch(api("/api/v1/admin/products/"), { headers }),
+          fetch(api("/api/v1/admin/orders/?size=100"), { headers }),
         ]);
 
         if (productsRes.status === "fulfilled" && productsRes.value.ok) {
@@ -323,7 +335,7 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
           }
         } else {
           // Fall back to public products
-          const publicRes = await fetch("/api/v1/public/products/");
+          const publicRes = await fetch(api("/api/v1/public/products/"));
           if (publicRes.ok) {
             const data = await publicRes.json();
             if (Array.isArray(data) && data.length > 0) {
@@ -340,7 +352,7 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
         }
       } else {
         // Public Storefront: Only fetch public products
-        const publicRes = await fetch("/api/v1/public/products/");
+        const publicRes = await fetch(api("/api/v1/public/products/"));
         if (publicRes.ok) {
           const data = await publicRes.json();
           if (Array.isArray(data) && data.length > 0) {
@@ -356,7 +368,7 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const savedToken = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
     if (savedToken) {
-      fetch("/api/v1/admin/auth/me", {
+      fetch(api("/api/v1/admin/auth/me"), {
         headers: { Authorization: `Bearer ${savedToken}` },
       })
         .then((res) => {
@@ -396,7 +408,7 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
       const product = products.find((p) => p.id === productId);
       const variant = product?.weights.find((w) => w.grams === grams);
       if (variant && variant.id) {
-        await fetch(`/api/v1/admin/variants/${variant.id}`, {
+        await fetch(api(`/api/v1/admin/variants/${variant.id}`), {
           method: "PUT",
           headers: getAdminHeaders({ "Content-Type": "application/json" }),
           body: JSON.stringify({ price: Math.max(1, newPrice) }),
@@ -412,7 +424,7 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
       const formData = new FormData();
       formData.append("file", fileOrUrl);
       try {
-        const res = await fetch(`/api/v1/admin/products/${productId}/image`, {
+        const res = await fetch(api(`/api/v1/admin/products/${productId}/image`), {
           method: "POST",
           headers: getAdminHeaders(),
           body: formData,
@@ -441,7 +453,7 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
       }),
     );
     try {
-      await fetch(`/api/v1/admin/products/${productId}/image`, {
+      await fetch(api(`/api/v1/admin/products/${productId}/image`), {
         method: "DELETE",
         headers: getAdminHeaders(),
       });
@@ -472,7 +484,7 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
           },
         ],
       };
-      await fetch(`/api/v1/admin/products/${productId}/translations`, {
+      await fetch(api(`/api/v1/admin/products/${productId}/translations`), {
         method: "PUT",
         headers: getAdminHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify(payload),
@@ -537,7 +549,7 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
       })),
     };
 
-    const res = await fetch("/api/v1/admin/products/", {
+    const res = await fetch(api("/api/v1/admin/products/"), {
       method: "POST",
       headers: getAdminHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify(payload),
@@ -560,7 +572,7 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
       try {
         const imgData = new FormData();
         imgData.append("file", imageFile);
-        const imgRes = await fetch(`/api/v1/admin/products/${createdProduct.id}/image`, {
+        const imgRes = await fetch(api(`/api/v1/admin/products/${createdProduct.id}/image`), {
           method: "POST",
           headers: getAdminHeaders(),
           body: imgData,
@@ -581,13 +593,13 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
   const deleteProduct = async (productId: string) => {
     setProducts((prev) => prev.filter((p) => p.id !== productId));
     try {
-      const res = await fetch(`/api/v1/admin/products/${productId}`, {
+      const res = await fetch(api(`/api/v1/admin/products/${productId}`), {
         method: "DELETE",
         headers: getAdminHeaders(),
       });
       if (!res.ok) {
         // Fallback to deactivate if DELETE endpoint is not supported
-        await fetch(`/api/v1/admin/products/${productId}/deactivate`, {
+        await fetch(api(`/api/v1/admin/products/${productId}/deactivate`), {
           method: "PATCH",
           headers: getAdminHeaders(),
         });
@@ -603,7 +615,7 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
     const isActive = !product.available;
     try {
       const endpoint = isActive ? "activate" : "deactivate";
-      await fetch(`/api/v1/admin/products/${productId}/${endpoint}`, {
+      await fetch(api(`/api/v1/admin/products/${productId}/${endpoint}`), {
         method: "PATCH",
         headers: getAdminHeaders(),
       });
@@ -634,7 +646,7 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
   const updateOrderStatus = async (orderId: string, status: OrderStatus) => {
     const backendStatus = mapOrderStatusToBackend(status);
     try {
-      await fetch(`/api/v1/admin/orders/${orderId}/status`, {
+      await fetch(api(`/api/v1/admin/orders/${orderId}/status`), {
         method: "PUT",
         headers: getAdminHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ status: backendStatus }),
@@ -647,7 +659,7 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
 
   const deleteOrder = async (orderId: string) => {
     try {
-      await fetch(`/api/v1/admin/orders/${orderId}/cancel`, {
+      await fetch(api(`/api/v1/admin/orders/${orderId}/cancel`), {
         method: "POST",
         headers: getAdminHeaders(),
       });

@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { ExternalLink, Store, Clock, RefreshCw } from "lucide-react";
-import { useAdminStore } from "@/lib/admin-store";
+import { useAdminStore, api } from "@/lib/admin-store";
 import fareedLogo from "@/assets/fareed-logo.jpg";
 
 export function AdminHeader({ onLogout }: { onLogout?: () => void }) {
@@ -12,7 +12,7 @@ export function AdminHeader({ onLogout }: { onLogout?: () => void }) {
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
-      await fetch("/api/v1/admin/auth/logout", { method: "POST" });
+      await fetch(api("/api/v1/admin/auth/logout"), { method: "POST" });
     } catch (e) {
       console.error("Failed to logout cleanly from server:", e);
     } finally {

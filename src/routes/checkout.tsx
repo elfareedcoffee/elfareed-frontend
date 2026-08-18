@@ -3,7 +3,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { CheckCircle2, ShoppingBag } from "lucide-react";
 import { useCart } from "@/lib/cart";
-import { useAdminStore } from "@/lib/admin-store";
+import { useAdminStore, api } from "@/lib/admin-store";
 import { SiteHeader } from "@/components/site-header";
 import { CONTACT } from "@/data/products";
 
@@ -189,7 +189,7 @@ function Checkout() {
                   };
                   if (lastCartId) cartHeaders["x-cart-id"] = lastCartId;
 
-                  const cartRes = await fetch("/api/v1/public/cart/items", {
+                  const cartRes = await fetch(api("/api/v1/public/cart/items"), {
                     method: "POST",
                     headers: cartHeaders,
                     body: JSON.stringify({
@@ -213,7 +213,7 @@ function Checkout() {
                 const orderHeaders: Record<string, string> = { "Content-Type": "application/json" };
                 if (lastCartId) orderHeaders["x-cart-id"] = lastCartId;
 
-                const res = await fetch("/api/v1/public/orders/", {
+                const res = await fetch(api("/api/v1/public/orders/"), {
                   method: "POST",
                   headers: orderHeaders,
                   body: JSON.stringify({
