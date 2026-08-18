@@ -40,6 +40,7 @@ type AdminStoreContextValue = {
   products: AdminProduct[];
   orders: Order[];
   settings: StoreSettings;
+  fetchAdminData: () => Promise<void>;
   updatePrice: (productId: string, grams: number, newPrice: number) => Promise<void>;
   updateProductImage: (productId: string, fileOrUrl?: File | string | undefined) => Promise<void>;
   removeProductImage: (productId: string) => Promise<void>;
@@ -74,6 +75,21 @@ const INITIAL_SETTINGS: StoreSettings = {
   salesPhone: "01110583020",
   wholesalePhones: ["01020073246", "01005642565"],
 };
+
+export function getAdminHeaders(extraHeaders: Record<string, string> = {}): Record<string, string> {
+  const headers: Record<string, string> = { ...extraHeaders };
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("admin_token");
+    const csrf = localStorage.getItem("admin_csrf");
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+    if (csrf) {
+      headers["X-CSRF-Token"] = csrf;
+    }
+  }
+  return headers;
+}
 
 const INITIAL_PRODUCTS: AdminProduct[] = defaultProducts.map(p => ({
   id: p.id,
@@ -221,38 +237,40 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
     }
   }, [settings]);
 
-  useEffect(() => {
-    const fetchInitialData = async () => {
-      try {
-        const productsRes = await fetch("/api/v1/admin/products/");
+  const fetchAdminData = async () => {
+    try {
+      const headers = getAdminHeaders();
+      const productsRes = await fetch("/api/v1/admin/products/", { headers });
 
-        if (productsRes.ok) {
-          const data = await productsRes.json();
+      if (productsRes.ok) {
+        const data = await productsRes.json();
+        if (Array.isArray(data) && data.length > 0) {
+           setProducts(data.map(mapBackendProduct));
+        }
+      } else {
+        const publicRes = await fetch("/api/v1/public/products/");
+        if (publicRes.ok) {
+          const data = await publicRes.json();
           if (Array.isArray(data) && data.length > 0) {
              setProducts(data.map(mapBackendProduct));
           }
-          
-          const ordersRes = await fetch("/api/v1/admin/orders/?size=100");
-          if (ordersRes.ok) {
-            const ordersData = await ordersRes.json();
-            if (ordersData.items) {
-               setOrders(ordersData.items.map(mapBackendOrder));
-            }
-          }
-        } else if (productsRes.status === 401 || productsRes.status === 403) {
-          const publicRes = await fetch("/api/v1/public/products/");
-          if (publicRes.ok) {
-            const data = await publicRes.json();
-            if (Array.isArray(data) && data.length > 0) {
-               setProducts(data.map(mapBackendProduct));
-            }
-          }
         }
-      } catch (e) {
-        console.error("Failed to fetch admin store data", e);
       }
-    };
-    fetchInitialData();
+
+      const ordersRes = await fetch("/api/v1/admin/orders/?size=100", { headers });
+      if (ordersRes.ok) {
+        const ordersData = await ordersRes.json();
+        if (ordersData.items) {
+           setOrders(ordersData.items.map(mapBackendOrder));
+        }
+      }
+    } catch (e) {
+      console.error("Failed to fetch admin store data", e);
+    }
+  };
+
+  useEffect(() => {
+    fetchAdminData();
   }, []);
 
   const updatePrice = async (productId: string, grams: number, newPrice: number) => {
@@ -274,7 +292,7 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
       if (variant && variant.id) {
         await fetch(`/api/v1/admin/variants/${variant.id}`, {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          headers: getAdminHeaders({ "Content-Type": "application/json" }),
           body: JSON.stringify({ price: Math.max(1, newPrice) })
         });
       }
@@ -290,6 +308,7 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
       try {
         const res = await fetch(`/api/v1/admin/products/${productId}/image`, {
           method: "POST",
+          headers: getAdminHeaders(),
           body: formData
         });
         if (res.ok) {
@@ -316,7 +335,10 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
       })
     );
     try {
-      await fetch(`/api/v1/admin/products/${productId}/image`, { method: "DELETE" });
+      await fetch(`/api/v1/admin/products/${productId}/image`, {
+        method: "DELETE",
+        headers: getAdminHeaders()
+      });
     } catch (e) {
       console.error("Failed to delete product image", e);
     }
@@ -344,7 +366,7 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
       };
       await fetch(`/api/v1/admin/products/${productId}/translations`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: getAdminHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify(payload)
       });
     } catch (e) {
@@ -400,7 +422,7 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
 
       const res = await fetch("/api/v1/admin/products/", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAdminHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify(payload)
       });
       
@@ -412,6 +434,7 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
           imgData.append("file", imageFile);
           const imgRes = await fetch(`/api/v1/admin/products/${createdProduct.id}/image`, {
             method: "POST",
+            headers: getAdminHeaders(),
             body: imgData
           });
           if (imgRes.ok) {
@@ -439,7 +462,10 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
     const isActive = !product.available;
     try {
       const endpoint = isActive ? "activate" : "deactivate";
-      await fetch(`/api/v1/admin/products/${productId}/${endpoint}`, { method: "PATCH" });
+      await fetch(`/api/v1/admin/products/${productId}/${endpoint}`, {
+        method: "PATCH",
+        headers: getAdminHeaders()
+      });
       setProducts((prev) =>
         prev.map((p) => (p.id === productId ? { ...p, available: isActive } : p)),
       );
@@ -469,7 +495,7 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
     try {
       await fetch(`/api/v1/admin/orders/${orderId}/status`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: getAdminHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ status: backendStatus })
       });
       setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status } : o)));
@@ -480,7 +506,10 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
 
   const deleteOrder = async (orderId: string) => {
     try {
-      await fetch(`/api/v1/admin/orders/${orderId}/cancel`, { method: "POST" });
+      await fetch(`/api/v1/admin/orders/${orderId}/cancel`, {
+        method: "POST",
+        headers: getAdminHeaders()
+      });
       setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: "ملغي" } : o)));
     } catch (e) {
       console.error(e);
@@ -570,6 +599,7 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
       products,
       orders,
       settings,
+      fetchAdminData,
       updatePrice,
       updateProductImage,
       removeProductImage,

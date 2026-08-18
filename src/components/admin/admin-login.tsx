@@ -20,7 +20,16 @@ export function AdminLogin({ onLoginSuccess }: { onLoginSuccess: () => void }) {
       });
 
       if (!res.ok) {
-        throw new Error("بيانات الدخول غير صحيحة");
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData?.detail || errData?.error?.message || "بيانات الدخول غير صحيحة");
+      }
+
+      const data = await res.json();
+      if (data?.access_token) {
+        localStorage.setItem("admin_token", data.access_token);
+      }
+      if (data?.csrf_token) {
+        localStorage.setItem("admin_csrf", data.csrf_token);
       }
 
       onLoginSuccess();

@@ -28,13 +28,22 @@ type TabKey = "insights" | "orders" | "products" | "settings";
 function AdminPage() {
   const [activeTab, setActiveTab] = useState<TabKey>("insights");
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  const { analytics, orders } = useAdminStore();
+  const { analytics, orders, fetchAdminData } = useAdminStore();
 
   useEffect(() => {
-    fetch("/api/v1/admin/auth/me")
+    const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
+    fetch("/api/v1/admin/auth/me", {
+      headers: {
+        ...(token ? { "Authorization": `Bearer ${token}` } : {})
+      }
+    })
       .then(res => {
-        if (res.ok) setIsAuthenticated(true);
-        else setIsAuthenticated(false);
+        if (res.ok) {
+          setIsAuthenticated(true);
+          fetchAdminData();
+        } else {
+          setIsAuthenticated(false);
+        }
       })
       .catch(() => setIsAuthenticated(false));
   }, []);
@@ -44,7 +53,14 @@ function AdminPage() {
   }
 
   if (isAuthenticated === false) {
-    return <AdminLogin onLoginSuccess={() => setIsAuthenticated(true)} />;
+    return (
+      <AdminLogin
+        onLoginSuccess={() => {
+          setIsAuthenticated(true);
+          fetchAdminData();
+        }}
+      />
+    );
   }
 
   const tabs: { key: TabKey; label: string; icon: typeof BarChart3; badge?: number | string }[] = [
@@ -56,7 +72,13 @@ function AdminPage() {
 
   return (
     <div className="paper min-h-screen bg-background text-foreground pb-20">
-      <AdminHeader onLogout={() => setIsAuthenticated(false)} />
+      <AdminHeader
+        onLogout={() => {
+          localStorage.removeItem("admin_token");
+          localStorage.removeItem("admin_csrf");
+          setIsAuthenticated(false);
+        }}
+      />
 
       <main className="mx-auto max-w-7xl px-4 sm:px-6 pt-8">
         {/* Navigation Tabs Bar */}
