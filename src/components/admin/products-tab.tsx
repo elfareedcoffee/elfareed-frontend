@@ -38,26 +38,37 @@ export function ProductsTab() {
   const [newProdMarker, setNewProdMarker] = useState("#C9933B");
   const [newProdImage, setNewProdImage] = useState("");
   const [newProdImageFile, setNewProdImageFile] = useState<File | null>(null);
+  const [editImageFile, setEditImageFile] = useState<File | null>(null);
   const [price250, setPrice250] = useState("150");
   const [price500, setPrice500] = useState("280");
   const [price1000, setPrice1000] = useState("530");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEditingSubmitting, setIsEditingSubmitting] = useState(false);
 
-  const handleImageFileChange = (
+  const handleImageFileChange = async (
     e: React.ChangeEvent<HTMLInputElement>,
     targetProductId?: string,
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("حجم الصورة كبير جداً (الحد الأقصى 5 ميجابايت)");
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("حجم الصورة كبير جداً (الحد الأقصى 10 ميجابايت)");
+      if (e.target) e.target.value = "";
       return;
     }
 
     if (targetProductId) {
-      updateProductImage(targetProductId, file);
-      toast.success("تم تحديث ورفع صورة المنتج بنجاح");
+      const toastId = toast.loading("جاري رفع وتحديث صورة المنتج...");
+      try {
+        await updateProductImage(targetProductId, file);
+        toast.success("تم تحديث ورفع صورة المنتج بنجاح", { id: toastId });
+      } catch (err: any) {
+        console.error("Failed to upload image:", err);
+        toast.error(err?.message || "فشل رفع صورة المنتج", { id: toastId });
+      } finally {
+        if (e.target) e.target.value = "";
+      }
     } else {
       setNewProdImageFile(file);
       const reader = new FileReader();
@@ -65,6 +76,7 @@ export function ProductsTab() {
         setNewProdImage(uploadEvent.target?.result as string);
       };
       reader.readAsDataURL(file);
+      if (e.target) e.target.value = "";
     }
   };
 
@@ -247,7 +259,10 @@ export function ProductsTab() {
                   </button>
 
                   <button
-                    onClick={() => setEditingProduct(product)}
+                    onClick={() => {
+                      setEditingProduct(product);
+                      setEditImageFile(null);
+                    }}
                     className="p-1.5 border border-ink/30 bg-background hover:bg-ink hover:text-cream transition-colors rounded cursor-pointer"
                     title="تعديل التفاصيل"
                   >
@@ -532,7 +547,10 @@ export function ProductsTab() {
               <div className="flex items-center justify-between border-b border-ink/20 pb-4">
                 <h3 className="font-display text-3xl">تعديل {editingProduct.name}</h3>
                 <button
-                  onClick={() => setEditingProduct(null)}
+                  onClick={() => {
+                    setEditingProduct(null);
+                    setEditImageFile(null);
+                  }}
                   className="p-1 hover:bg-kraft border border-ink/20 rounded cursor-pointer"
                 >
                   <X className="h-5 w-5" />
@@ -540,16 +558,29 @@ export function ProductsTab() {
               </div>
 
               <form
-                onSubmit={(e) => {
+                onSubmit={async (e) => {
                   e.preventDefault();
-                  updateProduct(editingProduct.id, {
-                    name: editingProduct.name,
-                    latin: editingProduct.latin,
-                    note: editingProduct.note,
-                    desc: editingProduct.desc,
-                  });
-                  toast.success(`تم حفظ بيانات ${editingProduct.name}`);
-                  setEditingProduct(null);
+                  setIsEditingSubmitting(true);
+                  const toastId = toast.loading("جاري حفظ التعديلات...");
+                  try {
+                    await updateProduct(editingProduct.id, {
+                      name: editingProduct.name,
+                      latin: editingProduct.latin,
+                      note: editingProduct.note,
+                      desc: editingProduct.desc,
+                    });
+                    if (editImageFile) {
+                      await updateProductImage(editingProduct.id, editImageFile);
+                    }
+                    toast.success(`تم حفظ بيانات ${editingProduct.name}`, { id: toastId });
+                    setEditingProduct(null);
+                    setEditImageFile(null);
+                  } catch (err: any) {
+                    console.error("Failed to update product:", err);
+                    toast.error(err?.message || "فشل حفظ التعديلات", { id: toastId });
+                  } finally {
+                    setIsEditingSubmitting(false);
+                  }
                 }}
                 className="mt-5 space-y-4 text-xs sm:text-sm"
               >
@@ -611,6 +642,12 @@ export function ProductsTab() {
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (!file) return;
+                        if (file.size > 10 * 1024 * 1024) {
+                          toast.error("حجم الصورة كبير جداً (الحد الأقصى 10 ميجابايت)");
+                          e.target.value = "";
+                          return;
+                        }
+                        setEditImageFile(file);
                         const reader = new FileReader();
                         reader.onload = (ev) => {
                           setEditingProduct({
@@ -631,10 +668,15 @@ export function ProductsTab() {
                         />
                         <button
                           type="button"
-                          onClick={() => {
+                          onClick={async () => {
                             setEditingProduct({ ...editingProduct, image: undefined });
-                            removeProductImage(editingProduct.id);
-                            toast.info(`تم حذف صورة ${editingProduct.name}`);
+                            setEditImageFile(null);
+                            try {
+                              await removeProductImage(editingProduct.id);
+                              toast.info(`تم حذف صورة ${editingProduct.name}`);
+                            } catch (err: any) {
+                              toast.error(err?.message || "فشل حذف الصورة");
+                            }
                           }}
                           className="text-xs font-bold text-red-600 hover:text-red-800 underline cursor-pointer"
                         >
@@ -648,16 +690,20 @@ export function ProductsTab() {
                 <div className="flex items-center justify-end gap-2 border-t border-ink/20 pt-4 mt-6">
                   <button
                     type="button"
-                    onClick={() => setEditingProduct(null)}
-                    className="border border-ink/30 bg-background px-4 py-2 text-xs font-semibold hover:bg-kraft"
+                    onClick={() => {
+                      setEditingProduct(null);
+                      setEditImageFile(null);
+                    }}
+                    className="border border-ink/30 bg-background px-4 py-2 text-xs font-semibold hover:bg-kraft cursor-pointer"
                   >
                     إلغاء
                   </button>
                   <button
                     type="submit"
-                    className="border border-ink bg-ink px-6 py-2 text-xs font-bold text-cream hover:bg-brass hover:text-ink transition-colors cursor-pointer"
+                    disabled={isEditingSubmitting}
+                    className="border border-ink bg-ink px-6 py-2 text-xs font-bold text-cream hover:bg-brass hover:text-ink transition-colors disabled:opacity-60 cursor-pointer"
                   >
-                    حفظ التعديلات
+                    {isEditingSubmitting ? "جاري الحفظ..." : "حفظ التعديلات"}
                   </button>
                 </div>
               </form>

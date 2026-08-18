@@ -46,7 +46,10 @@ type AdminStoreContextValue = {
   logout: () => void;
   fetchAdminData: (tokenOverride?: string) => Promise<void>;
   updatePrice: (productId: string, grams: number, newPrice: number) => Promise<void>;
-  updateProductImage: (productId: string, fileOrUrl?: File | string | undefined) => Promise<void>;
+  updateProductImage: (
+    productId: string,
+    fileOrUrl?: File | string | undefined,
+  ) => Promise<string | undefined>;
   removeProductImage: (productId: string) => Promise<void>;
   updateProduct: (productId: string, updates: Partial<AdminProduct>) => Promise<void>;
   addProduct: (
@@ -419,28 +422,34 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const updateProductImage = async (productId: string, fileOrUrl?: File | string | undefined) => {
+  const updateProductImage = async (
+    productId: string,
+    fileOrUrl?: File | string | undefined,
+  ): Promise<string | undefined> => {
     if (fileOrUrl instanceof File) {
       const formData = new FormData();
       formData.append("file", fileOrUrl);
-      try {
-        const res = await fetch(api(`/api/v1/admin/products/${productId}/image`), {
-          method: "POST",
-          headers: getAdminHeaders(),
-          body: formData,
-        });
-        if (res.ok) {
-          const updated = await res.json();
-          setProducts((prev) =>
-            prev.map((p) => (p.id === productId ? mapBackendProduct(updated) : p)),
-          );
-        }
-      } catch (e) {
-        console.error("Failed to upload product image", e);
+      const res = await fetch(api(`/api/v1/admin/products/${productId}/image`), {
+        method: "POST",
+        headers: getAdminHeaders(),
+        body: formData,
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        const message = errData?.detail || errData?.message || "فشل رفع الصورة على الخادم";
+        throw new Error(typeof message === "string" ? message : JSON.stringify(message));
       }
+      const updated = await res.json();
+      const mapped = mapBackendProduct(updated);
+      setProducts((prev) =>
+        prev.map((p) => (p.id === productId ? mapped : p)),
+      );
+      return mapped.image;
     } else if (typeof fileOrUrl === "string") {
       setProducts((prev) => prev.map((p) => (p.id === productId ? { ...p, image: fileOrUrl } : p)));
+      return fileOrUrl;
     }
+    return undefined;
   };
 
   const removeProductImage = async (productId: string) => {
@@ -452,13 +461,14 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
         return updated;
       }),
     );
-    try {
-      await fetch(api(`/api/v1/admin/products/${productId}/image`), {
-        method: "DELETE",
-        headers: getAdminHeaders(),
-      });
-    } catch (e) {
-      console.error("Failed to delete product image", e);
+    const res = await fetch(api(`/api/v1/admin/products/${productId}/image`), {
+      method: "DELETE",
+      headers: getAdminHeaders(),
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      const message = errData?.detail || errData?.message || "فشل حذف الصورة من الخادم";
+      throw new Error(typeof message === "string" ? message : JSON.stringify(message));
     }
   };
 
