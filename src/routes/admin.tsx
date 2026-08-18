@@ -56,7 +56,7 @@ function AdminPage() {
 
   return (
     <div className="paper min-h-screen bg-background text-foreground pb-20">
-      <AdminHeader />
+      <AdminHeader onLogout={() => setIsAuthenticated(false)} />
 
       <main className="mx-auto max-w-7xl px-4 sm:px-6 pt-8">
         {/* Navigation Tabs Bar */}

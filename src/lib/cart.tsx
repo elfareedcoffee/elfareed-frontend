@@ -3,7 +3,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 export type CartItem = {
   id: string;
   productId: string;
-  variantId?: string;
+  variantId?: string | undefined;
   name: string;
   weight: string;
   grams: number;

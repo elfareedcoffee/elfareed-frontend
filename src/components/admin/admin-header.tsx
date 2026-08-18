@@ -4,9 +4,26 @@ import { ExternalLink, Store, Clock, RefreshCw } from "lucide-react";
 import { useAdminStore } from "@/lib/admin-store";
 import fareedLogo from "@/assets/fareed-logo.jpg";
 
-export function AdminHeader() {
+export function AdminHeader({ onLogout }: { onLogout?: () => void }) {
   const { settings, updateSettings, analytics, resetToDefaults } = useAdminStore();
   const [time, setTime] = useState<string>("");
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await fetch("/api/v1/admin/auth/logout", { method: "POST" });
+    } catch (e) {
+      console.error("Failed to logout cleanly from server:", e);
+    } finally {
+      setIsLoggingOut(false);
+      if (onLogout) {
+        onLogout();
+      } else {
+        window.location.reload();
+      }
+    }
+  };
 
   useEffect(() => {
     const update = () => {
@@ -94,15 +111,12 @@ export function AdminHeader() {
           
           {/* Logout button */}
           <button
-            onClick={() => {
-              document.cookie = "admin_access_token=; Max-Age=0; path=/";
-              window.location.reload();
-            }}
-            className="inline-flex items-center gap-1 sm:gap-1.5 border border-red-600 bg-red-50 px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs font-medium text-red-700 transition-all hover:bg-red-600 hover:text-white cursor-pointer shrink-0"
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            className="inline-flex items-center gap-1 sm:gap-1.5 border border-red-600 bg-red-50 px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs font-medium text-red-700 transition-all hover:bg-red-600 hover:text-white cursor-pointer disabled:opacity-50 shrink-0"
             title="تسجيل الخروج"
           >
-            <span className="hidden sm:inline">خروج</span>
-            <span className="inline sm:hidden">خروج</span>
+            <span>{isLoggingOut ? "جارِ الخروج..." : "خروج"}</span>
           </button>
         </div>
       </div>
