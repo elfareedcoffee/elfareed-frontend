@@ -57,11 +57,12 @@ export function AdminLogin({ onLoginSuccess }: { onLoginSuccess: () => void }) {
           )}
 
           <div className="space-y-2 text-right">
-            <label className="text-sm font-bold text-ink">اسم المستخدم</label>
+            <label className="text-sm font-bold text-ink">اسم المستخدم أو البريد الإلكتروني</label>
             <input
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
+              placeholder="admin أو elfareedcoffee@gmail.com"
               className="w-full border-2 border-ink/20 p-3 focus:border-brass focus:outline-none transition-colors text-ink bg-transparent"
               required
               disabled={loading}
