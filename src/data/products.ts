@@ -1,4 +1,4 @@
-export type Weight = { label: string; grams: number; price: number };
+export type Weight = { id?: string; label: string; grams: number; price: number };
 
 export type Product = {
   id: string;

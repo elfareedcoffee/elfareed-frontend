@@ -96,6 +96,7 @@ export function ProductCard({ product }: { product: AdminProduct; index: number 
               add(
                 {
                   productId: product.id,
+                  variantId: w.id,
                   name: product.name,
                   weight: w.label,
                   grams: w.grams,

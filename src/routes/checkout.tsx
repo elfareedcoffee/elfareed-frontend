@@ -30,6 +30,7 @@ function Checkout() {
   const { items, total, clear, setQty } = useCart();
   const { createOrder, settings } = useAdminStore();
   const [done, setDone] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [createdOrderNumber, setCreatedOrderNumber] = useState<string>("");
   const shipping = items.length ? settings.deliveryFee : 0;
 
@@ -91,34 +92,88 @@ function Checkout() {
         <div className="mt-10 grid gap-10 md:grid-cols-[1.2fr_1fr]">
           <form
             className="space-y-5"
-            onSubmit={(e) => {
+            onSubmit={async (e) => {
               e.preventDefault();
               if (!items.length) {
                 toast.error("سلة الطلبات فارغة");
                 return;
               }
 
-              const formData = new FormData(e.currentTarget);
-              const customer = {
-                name: (formData.get("name") as string) || "",
-                phone: (formData.get("phone") as string) || "",
-                address: (formData.get("address") as string) || "",
-                area: (formData.get("area") as string) || "",
-                notes: (formData.get("notes") as string) || "",
-              };
+              setIsSubmitting(true);
+              try {
+                const formData = new FormData(e.currentTarget);
+                const customer = {
+                  name: (formData.get("name") as string) || "",
+                  phone: (formData.get("phone") as string) || "",
+                  address: (formData.get("address") as string) || "",
+                  area: (formData.get("area") as string) || "",
+                  notes: (formData.get("notes") as string) || "",
+                };
 
-              const newOrd = createOrder({
-                customer,
-                items: [...items],
-                subtotal: total,
-                shipping,
-                total: total + shipping,
-              });
+                // 1. Clear cart just in case
+                await fetch("/api/v1/public/cart/", { method: "DELETE" }).catch(() => {});
 
-              setCreatedOrderNumber(newOrd.orderNumber);
-              clear();
-              setDone(true);
-              toast.success(`تم تسجيل طلبك بنجاح برقم #${newOrd.orderNumber}`);
+                // 2. Add each item to the backend cart
+                for (const item of items) {
+                  if (!item.variantId) continue;
+                  await fetch("/api/v1/public/cart/items", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      product_variant_id: item.variantId,
+                      quantity: item.qty
+                    })
+                  });
+                }
+
+                let apiPhone = customer.phone.trim();
+                if (apiPhone.startsWith("01")) {
+                  apiPhone = "+20" + apiPhone.substring(1);
+                }
+
+                // 3. Submit order
+                const res = await fetch("/api/v1/public/orders/", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    customer_name: customer.name,
+                    customer_phone: apiPhone,
+                    governorate: customer.area || "القاهرة",
+                    city: customer.area || "القاهرة",
+                    delivery_address: customer.address,
+                    delivery_notes: customer.notes || null,
+                    payment_method: "COD"
+                  })
+                });
+
+                if (res.ok) {
+                  const data = await res.json();
+                  
+                  // Update local UI state
+                  const newOrd = createOrder({
+                    customer,
+                    items: [...items],
+                    subtotal: total,
+                    shipping,
+                    total: total + shipping,
+                  });
+                  newOrd.id = data.id;
+                  newOrd.orderNumber = data.order_number;
+
+                  setCreatedOrderNumber(data.order_number);
+                  clear();
+                  setDone(true);
+                  toast.success(`تم تسجيل طلبك بنجاح برقم #${data.order_number}`);
+                } else {
+                  const errData = await res.json();
+                  toast.error(errData.detail?.message || "حدث خطأ أثناء تسجيل الطلب");
+                }
+              } catch (err) {
+                console.error("Checkout failed:", err);
+                toast.error("حدث خطأ في الاتصال بالخادم");
+              } finally {
+                setIsSubmitting(false);
+              }
             }}
           >
             {[
@@ -168,10 +223,10 @@ function Checkout() {
             </div>
             <button
               type="submit"
-              disabled={items.length === 0}
+              disabled={items.length === 0 || isSubmitting}
               className="w-full border border-ink bg-ink py-3.5 text-sm font-medium text-cream transition-all hover:bg-brass hover:text-ink active:scale-98 disabled:opacity-40"
             >
-              تأكيد الطلب
+              {isSubmitting ? "جاري التسجيل..." : "تأكيد الطلب"}
             </button>
           </form>
 
