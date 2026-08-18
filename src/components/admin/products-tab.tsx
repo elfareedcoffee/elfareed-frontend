@@ -342,9 +342,10 @@ export function ProductsTab() {
 
       {/* Add New Product Modal */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/60 backdrop-blur-xs animate-fade-in-up">
-          <div className="relative w-full max-w-lg border border-ink bg-cream p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-ink/20 pb-4">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-ink/60 backdrop-blur-xs animate-fade-in-up">
+          <div className="flex min-h-full items-center justify-center p-4 sm:p-6">
+            <div className="relative w-full max-w-lg border border-ink bg-cream p-6 shadow-2xl">
+              <div className="flex items-center justify-between border-b border-ink/20 pb-4">
               <div className="flex items-center gap-2">
                 <Sparkles className="h-5 w-5 text-brass" />
                 <h3 className="font-display text-3xl">إضافة تحميصة بن جديدة</h3>
@@ -505,13 +506,15 @@ export function ProductsTab() {
             </form>
           </div>
         </div>
+        </div>
       )}
 
       {/* Edit Product Modal */}
       {editingProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/60 backdrop-blur-xs animate-fade-in-up">
-          <div className="relative w-full max-w-lg border border-ink bg-cream p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-ink/20 pb-4">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-ink/60 backdrop-blur-xs animate-fade-in-up">
+          <div className="flex min-h-full items-center justify-center p-4 sm:p-6">
+            <div className="relative w-full max-w-lg border border-ink bg-cream p-6 shadow-2xl">
+              <div className="flex items-center justify-between border-b border-ink/20 pb-4">
               <h3 className="font-display text-3xl">تعديل {editingProduct.name}</h3>
               <button
                 onClick={() => setEditingProduct(null)}
@@ -642,6 +645,7 @@ export function ProductsTab() {
               </div>
             </form>
           </div>
+        </div>
         </div>
       )}
     </div>

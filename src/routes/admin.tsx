@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { BarChart3, ShoppingBag, Coffee, Settings } from "lucide-react";
 import { AdminHeader } from "@/components/admin/admin-header";
+import { AdminLogin } from "@/components/admin/admin-login";
+import { Loader2 } from "lucide-react";
 import { InsightsTab } from "@/components/admin/insights-tab";
 import { OrdersTab } from "@/components/admin/orders-tab";
 import { ProductsTab } from "@/components/admin/products-tab";
@@ -25,7 +27,25 @@ type TabKey = "insights" | "orders" | "products" | "settings";
 
 function AdminPage() {
   const [activeTab, setActiveTab] = useState<TabKey>("insights");
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const { analytics, orders } = useAdminStore();
+
+  useEffect(() => {
+    fetch("/api/v1/admin/auth/me")
+      .then(res => {
+        if (res.ok) setIsAuthenticated(true);
+        else setIsAuthenticated(false);
+      })
+      .catch(() => setIsAuthenticated(false));
+  }, []);
+
+  if (isAuthenticated === null) {
+    return <div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="w-10 h-10 animate-spin text-brass" /></div>;
+  }
+
+  if (isAuthenticated === false) {
+    return <AdminLogin onLoginSuccess={() => setIsAuthenticated(true)} />;
+  }
 
   const tabs: { key: TabKey; label: string; icon: typeof BarChart3; badge?: number | string }[] = [
     { key: "insights", label: "التحليلات والمؤشرات", icon: BarChart3 },

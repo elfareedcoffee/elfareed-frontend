@@ -40,7 +40,6 @@ type AdminStoreContextValue = {
   products: AdminProduct[];
   orders: Order[];
   settings: StoreSettings;
-  // Product actions
   updatePrice: (productId: string, grams: number, newPrice: number) => void;
   updateProductImage: (productId: string, imageUrl?: string | undefined) => void;
   removeProductImage: (productId: string) => void;
@@ -48,20 +47,11 @@ type AdminStoreContextValue = {
   addProduct: (product: Omit<AdminProduct, "id"> & { id?: string }) => void;
   deleteProduct: (productId: string) => void;
   toggleProductAvailability: (productId: string) => void;
-  // Order actions
-  createOrder: (data: {
-    customer: CustomerInfo;
-    items: CartItem[];
-    subtotal: number;
-    shipping: number;
-    total: number;
-  }) => Order;
+  createOrder: (data: any) => Order;
   updateOrderStatus: (orderId: string, status: OrderStatus) => void;
   deleteOrder: (orderId: string) => void;
-  // Settings actions
   updateSettings: (updates: Partial<StoreSettings>) => void;
   resetToDefaults: () => void;
-  // Analytics
   analytics: {
     totalRevenue: number;
     totalOrders: number;
@@ -76,138 +66,7 @@ type AdminStoreContextValue = {
 
 const AdminStoreContext = createContext<AdminStoreContextValue | null>(null);
 
-const STORAGE_PRODUCTS_KEY = "fareed-admin-products-v1";
-const STORAGE_ORDERS_KEY = "fareed-admin-orders-v1";
 const STORAGE_SETTINGS_KEY = "fareed-admin-settings-v1";
-
-const INITIAL_ORDERS: Order[] = [
-  {
-    id: "ord-1001",
-    orderNumber: "FC-1001",
-    customer: {
-      name: "محمود إبراهيم",
-      phone: "01098765432",
-      address: "١٢ شارع النصر، الدور الثالث، شقة ٥",
-      area: "مصر الجديدة",
-      notes: "طحن ناعم للكنكة التركي",
-    },
-    items: [
-      {
-        id: "mahawwag-250",
-        productId: "mahawwag",
-        name: "محوج",
-        weight: "٢٥٠ جم",
-        grams: 250,
-        price: 145,
-        qty: 2,
-      },
-      {
-        id: "wasat-500",
-        productId: "wasat",
-        name: "وسط",
-        weight: "٥٠٠ جم",
-        grams: 500,
-        price: 255,
-        qty: 1,
-      },
-    ],
-    subtotal: 545,
-    shipping: 40,
-    total: 585,
-    status: "تم التوصيل",
-    createdAt: new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString(),
-  },
-  {
-    id: "ord-1002",
-    orderNumber: "FC-1002",
-    customer: {
-      name: "سارة عبد الرحمن",
-      phone: "01123456789",
-      address: "عمارة ٤٤، شارع فريد، المرج",
-      area: "المرج",
-      notes: "حبوب كاملة بدون طحن",
-    },
-    items: [
-      {
-        id: "fateh-1000",
-        productId: "fateh",
-        name: "فاتح",
-        weight: "١ كيلو",
-        grams: 1000,
-        price: 540,
-        qty: 1,
-      },
-    ],
-    subtotal: 540,
-    shipping: 40,
-    total: 580,
-    status: "قيد التجهيز",
-    createdAt: new Date(Date.now() - 1 * 24 * 3600 * 1000).toISOString(),
-  },
-  {
-    id: "ord-1003",
-    orderNumber: "FC-1003",
-    customer: {
-      name: "كريم يوسف",
-      phone: "01234567890",
-      address: "فيلا ٨، الحي الخامس",
-      area: "التجمع الخامس",
-      notes: "طحن وسط للفلتر V60",
-    },
-    items: [
-      {
-        id: "ghameq-500",
-        productId: "ghameq",
-        name: "غامق",
-        weight: "٥٠٠ جم",
-        grams: 500,
-        price: 265,
-        qty: 2,
-      },
-      {
-        id: "mahawwag-250",
-        productId: "mahawwag",
-        name: "محوج",
-        weight: "٢٥٠ جم",
-        grams: 250,
-        price: 145,
-        qty: 1,
-      },
-    ],
-    subtotal: 675,
-    shipping: 40,
-    total: 715,
-    status: "جديد",
-    createdAt: new Date(Date.now() - 3 * 3600 * 1000).toISOString(),
-  },
-  {
-    id: "ord-1004",
-    orderNumber: "FC-1004",
-    customer: {
-      name: "طارق العوضي",
-      phone: "01011223344",
-      address: "شارع شبرا الرئيسي، بجوار المحطة",
-      area: "شبرا",
-      notes: "إسبريسو",
-    },
-    items: [
-      {
-        id: "wasat-250",
-        productId: "wasat",
-        name: "وسط",
-        weight: "٢٥٠ جم",
-        grams: 250,
-        price: 135,
-        qty: 3,
-      },
-    ],
-    subtotal: 405,
-    shipping: 40,
-    total: 445,
-    status: "جديد",
-    createdAt: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
-  },
-];
 
 const INITIAL_SETTINGS: StoreSettings = {
   deliveryFee: 40,
@@ -216,26 +75,117 @@ const INITIAL_SETTINGS: StoreSettings = {
   wholesalePhones: ["01020073246", "01005642565"],
 };
 
-export function AdminStoreProvider({ children }: { children: ReactNode }) {
-  const [products, setProducts] = useState<AdminProduct[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_PRODUCTS_KEY);
-      if (saved) return JSON.parse(saved);
-    } catch {
-      /* ignore */
-    }
-    return defaultProducts.map((p) => ({ ...p, available: true }));
-  });
+function mapOrderStatus(status: string): OrderStatus {
+  switch (status) {
+    case "PENDING":
+    case "CONFIRMED": return "جديد";
+    case "PREPARING":
+    case "READY_FOR_DELIVERY":
+    case "OUT_FOR_DELIVERY": return "قيد التجهيز";
+    case "DELIVERED": return "تم التوصيل";
+    case "CANCELLED": return "ملغي";
+    default: return "جديد";
+  }
+}
 
-  const [orders, setOrders] = useState<Order[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_ORDERS_KEY);
-      if (saved) return JSON.parse(saved);
-    } catch {
-      /* ignore */
+function mapOrderStatusToBackend(status: OrderStatus): string {
+  switch (status) {
+    case "جديد": return "PENDING";
+    case "قيد التجهيز": return "PREPARING";
+    case "تم التوصيل": return "DELIVERED";
+    case "ملغي": return "CANCELLED";
+    default: return "PENDING";
+  }
+}
+
+function mapBackendOrder(o: any): Order {
+  return {
+    id: o.id,
+    orderNumber: o.order_number,
+    customer: {
+      name: o.customer_name,
+      phone: o.customer_phone,
+      address: o.delivery_address,
+      area: o.governorate + " - " + o.city,
+      notes: o.delivery_notes || "",
+    },
+    items: o.items.map((i: any) => ({
+      id: i.id,
+      productId: i.product_variant_id || i.id,
+      name: i.product_name_ar,
+      weight: i.weight_grams + " جم",
+      grams: i.weight_grams,
+      price: Number(i.unit_price),
+      qty: i.quantity,
+    })),
+    subtotal: Number(o.subtotal),
+    shipping: Number(o.delivery_fee),
+    total: Number(o.total),
+    status: mapOrderStatus(o.order_status),
+    createdAt: o.created_at,
+  };
+}
+
+function mapBackendProduct(p: any): AdminProduct {
+  let name = p.name;
+  let desc = p.description || "";
+  if (p.translations) {
+    const arTranslation = p.translations.find((t: any) => t.language === "ar") || p.translations[0];
+    name = arTranslation?.name || "بدون اسم";
+    desc = arTranslation?.description || "";
+  }
+  
+  let marker = "var(--roast-medium)";
+  let latin = "Medium";
+  let note = "كراميل · بندق · توازن";
+
+  if (name?.includes("فاتح")) {
+    marker = "var(--roast-light)";
+    latin = "Light";
+    note = "حمضية · زهور · وضوح";
+  } else if (name?.includes("غامق")) {
+    marker = "var(--roast-dark)";
+    latin = "Dark";
+    note = "كاكاو · دخان · قوة";
+  } else if (name?.includes("محوج")) {
+    marker = "var(--roast-spiced)";
+    latin = "Spiced";
+    note = "هيل · قرنفل · مستكة";
+  }
+
+  try {
+    const meta = JSON.parse(desc);
+    if (meta && typeof meta === 'object' && meta.desc !== undefined) {
+      desc = meta.desc;
+      if (meta.latin) latin = meta.latin;
+      if (meta.note) note = meta.note;
+      if (meta.marker) marker = meta.marker;
     }
-    return INITIAL_ORDERS;
-  });
+  } catch (e) {
+    // Ignore, it's just raw text
+  }
+
+  return {
+    id: p.id,
+    name: name || "بدون اسم",
+    desc: desc,
+    latin,
+    note,
+    marker: marker,
+    weights: p.variants?.map((v: any) => ({
+      id: v.id,
+      label: v.weight_grams === 1000 ? "١ كيلو" : (v.weight_grams === 500 ? "٥٠٠ جم" : "٢٥٠ جم"),
+      grams: v.weight_grams,
+      price: Number(v.price)
+    })) || [],
+    image: p.image_url || undefined,
+    available: p.is_active ?? true
+  };
+}
+
+export function AdminStoreProvider({ children }: { children: ReactNode }) {
+  const [products, setProducts] = useState<AdminProduct[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
 
   const [settings, setSettings] = useState<StoreSettings>(() => {
     try {
@@ -249,29 +199,48 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_PRODUCTS_KEY, JSON.stringify(products));
-    } catch {
-      /* ignore */
-    }
-  }, [products]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_ORDERS_KEY, JSON.stringify(orders));
-    } catch {
-      /* ignore */
-    }
-  }, [orders]);
-
-  useEffect(() => {
-    try {
       localStorage.setItem(STORAGE_SETTINGS_KEY, JSON.stringify(settings));
     } catch {
       /* ignore */
     }
   }, [settings]);
 
-  const updatePrice = (productId: string, grams: number, newPrice: number) => {
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      try {
+        const productsRes = await fetch("/api/v1/admin/products/");
+
+        if (productsRes.ok) {
+          const data = await productsRes.json();
+          if (Array.isArray(data)) {
+             setProducts(data.map(mapBackendProduct));
+          }
+          
+          const ordersRes = await fetch("/api/v1/admin/orders/?size=100");
+          if (ordersRes.ok) {
+            const ordersData = await ordersRes.json();
+            if (ordersData.items) {
+               setOrders(ordersData.items.map(mapBackendOrder));
+            }
+          }
+        } else if (productsRes.status === 401 || productsRes.status === 403) {
+          const publicRes = await fetch("/api/v1/public/products/");
+          if (publicRes.ok) {
+            const data = await publicRes.json();
+            if (Array.isArray(data)) {
+               setProducts(data.map(mapBackendProduct));
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Failed to fetch admin store data", e);
+      }
+    };
+    fetchInitialData();
+  }, []);
+
+  const updatePrice = async (productId: string, grams: number, newPrice: number) => {
+    // Optimistic UI update
     setProducts((prev) =>
       prev.map((p) => {
         if (p.id !== productId) return p;
@@ -283,6 +252,20 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
         };
       }),
     );
+
+    try {
+      const product = products.find(p => p.id === productId);
+      const variant = product?.weights.find(w => w.grams === grams);
+      if (variant && variant.id) {
+        await fetch(`/api/v1/admin/variants/${variant.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ price: Math.max(1, newPrice) })
+        });
+      }
+    } catch (e) {
+      console.error("Failed to update price", e);
+    }
   };
 
   const updateProductImage = (productId: string, imageUrl?: string | undefined) => {
@@ -304,15 +287,41 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
     updateProductImage(productId, undefined);
   };
 
-  const updateProduct = (productId: string, updates: Partial<AdminProduct>) => {
+  const updateProduct = async (productId: string, updates: Partial<AdminProduct>) => {
     setProducts((prev) => prev.map((p) => (p.id === productId ? { ...p, ...updates } : p)));
+    
+    try {
+      const oldProduct = products.find(p => p.id === productId);
+      if (!oldProduct) return;
+      const combined = { ...oldProduct, ...updates };
+      
+      const payload = {
+        translations: [{
+          language: "ar",
+          name: combined.name,
+          description: JSON.stringify({
+            desc: combined.desc,
+            latin: combined.latin,
+            note: combined.note,
+            marker: combined.marker
+          })
+        }]
+      };
+      await fetch(`/api/v1/admin/products/${productId}/translations`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+    } catch (e) {
+      console.error("Failed to update product details", e);
+    }
   };
 
-  const addProduct = (newProd: Omit<AdminProduct, "id"> & { id?: string }) => {
-    const id = newProd.id || `roast-${Date.now()}`;
+  const addProduct = async (newProd: Omit<AdminProduct, "id"> & { id?: string }) => {
+    const tempId = newProd.id || `roast-${Date.now()}`;
     const productToAdd: AdminProduct = {
       ...newProd,
-      id,
+      id: tempId,
       available: newProd.available ?? true,
       weights:
         newProd.weights && newProd.weights.length > 0
@@ -323,26 +332,71 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
               { label: "١ كيلو", grams: 1000, price: 530 },
             ],
     };
+    
     setProducts((prev) => [...prev, productToAdd]);
+
+    try {
+      const categoryId = "b58774a1-eea1-42c9-b91c-f58bca51fc1b"; // Default category
+      
+      const payload = {
+        category_id: categoryId,
+        is_active: true,
+        translations: [{
+          language: "ar",
+          name: productToAdd.name,
+          description: JSON.stringify({
+            desc: productToAdd.desc,
+            latin: productToAdd.latin,
+            note: productToAdd.note,
+            marker: productToAdd.marker
+          })
+        }],
+        variants: productToAdd.weights.map(w => ({
+          weight_grams: w.grams,
+          grind_type: "ESPRESSO",
+          price: w.price,
+          stock_quantity: 100
+        }))
+      };
+
+      const res = await fetch("/api/v1/admin/products/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      
+      if (res.ok) {
+        const createdProduct = await res.json();
+        // Replace temp product with real product from API
+        setProducts((prev) => prev.map((p) => p.id === tempId ? mapBackendProduct(createdProduct) : p));
+      }
+    } catch (e) {
+      console.error("Failed to create product", e);
+    }
   };
 
   const deleteProduct = (productId: string) => {
+    // Currently backend doesn't support deleting, but we can deactivate.
+    // For pure delete, we'd need a DELETE route. We just remove it from UI.
     setProducts((prev) => prev.filter((p) => p.id !== productId));
   };
 
-  const toggleProductAvailability = (productId: string) => {
-    setProducts((prev) =>
-      prev.map((p) => (p.id === productId ? { ...p, available: !p.available } : p)),
-    );
+  const toggleProductAvailability = async (productId: string) => {
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+    const isActive = !product.available;
+    try {
+      const endpoint = isActive ? "activate" : "deactivate";
+      await fetch(`/api/v1/admin/products/${productId}/${endpoint}`, { method: "PATCH" });
+      setProducts((prev) =>
+        prev.map((p) => (p.id === productId ? { ...p, available: isActive } : p)),
+      );
+    } catch (e) {
+      console.error(e);
+    }
   };
 
-  const createOrder = (data: {
-    customer: CustomerInfo;
-    items: CartItem[];
-    subtotal: number;
-    shipping: number;
-    total: number;
-  }): Order => {
+  const createOrder = (data: any): Order => {
     const newOrder: Order = {
       id: `ord-${Date.now()}`,
       orderNumber: `FC-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -358,12 +412,27 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
     return newOrder;
   };
 
-  const updateOrderStatus = (orderId: string, status: OrderStatus) => {
-    setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status } : o)));
+  const updateOrderStatus = async (orderId: string, status: OrderStatus) => {
+    const backendStatus = mapOrderStatusToBackend(status);
+    try {
+      await fetch(`/api/v1/admin/orders/${orderId}/status`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: backendStatus })
+      });
+      setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status } : o)));
+    } catch (e) {
+      console.error(e);
+    }
   };
 
-  const deleteOrder = (orderId: string) => {
-    setOrders((prev) => prev.filter((o) => o.id !== orderId));
+  const deleteOrder = async (orderId: string) => {
+    try {
+      await fetch(`/api/v1/admin/orders/${orderId}/cancel`, { method: "POST" });
+      setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: "ملغي" } : o)));
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const updateSettings = (updates: Partial<StoreSettings>) => {
@@ -371,8 +440,6 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
   };
 
   const resetToDefaults = () => {
-    setProducts(defaultProducts.map((p) => ({ ...p, available: true })));
-    setOrders(INITIAL_ORDERS);
     setSettings(INITIAL_SETTINGS);
   };
 
@@ -389,7 +456,6 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
       ? Math.round(totalRevenue / validOrders.length)
       : 0;
 
-    // Breakdown per roast
     const roastMap = new Map<
       string,
       { name: string; sales: number; count: number; marker: string }
@@ -414,7 +480,6 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
 
     const roastSalesBreakdown = Array.from(roastMap.values()).sort((a, b) => b.sales - a.sales);
 
-    // Generate last 7 days chart data
     const days: { [key: string]: { date: string; sales: number; orders: number } } = {};
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
