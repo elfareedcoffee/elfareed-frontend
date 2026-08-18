@@ -12,6 +12,7 @@ import {
   XCircle,
   AlertCircle,
   X,
+  RefreshCw,
 } from "lucide-react";
 import { useAdminStore, type Order, type OrderStatus } from "@/lib/admin-store";
 import { toast } from "sonner";
@@ -19,10 +20,23 @@ import { toast } from "sonner";
 const STATUS_OPTIONS: OrderStatus[] = ["جديد", "قيد التجهيز", "تم التوصيل", "ملغي"];
 
 export function OrdersTab() {
-  const { orders, updateOrderStatus, deleteOrder } = useAdminStore();
+  const { orders, updateOrderStatus, deleteOrder, fetchAdminData } = useAdminStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string>("الكل");
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await fetchAdminData();
+      toast.success("تم تحديث قائمة الطلبات بنجاح");
+    } catch {
+      toast.error("فشل تحديث قائمة الطلبات");
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   const filteredOrders = useMemo(() => {
     return orders.filter((o) => {
@@ -68,7 +82,7 @@ export function OrdersTab() {
           />
         </div>
 
-        {/* Filter Pills */}
+        {/* Filter Pills & Refresh Button */}
         <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
           {["الكل", ...STATUS_OPTIONS].map((st) => (
             <button
@@ -86,6 +100,16 @@ export function OrdersTab() {
                 : ` (${orders.filter((o) => o.status === st).length})`}
             </button>
           ))}
+
+          <button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold border border-ink/30 bg-background hover:bg-ink hover:text-cream transition-colors cursor-pointer disabled:opacity-50"
+            title="تحديث البيانات من السيرفر"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin text-brass" : ""}`} />
+            <span>تحديث</span>
+          </button>
         </div>
       </div>
 

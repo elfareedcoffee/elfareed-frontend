@@ -107,9 +107,9 @@ export function ProductsTab() {
       setPrice250("150");
       setPrice500("280");
       setPrice1000("530");
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast.error("حدث خطأ أثناء حفظ المنتج");
+      toast.error(err?.message || "حدث خطأ أثناء حفظ المنتج في قاعدة البيانات");
     } finally {
       setIsSubmitting(false);
     }
@@ -360,167 +360,167 @@ export function ProductsTab() {
           <div className="flex min-h-full items-center justify-center p-4 sm:p-6">
             <div className="relative w-full max-w-lg border border-ink bg-cream p-6 shadow-2xl">
               <div className="flex items-center justify-between border-b border-ink/20 pb-4">
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-brass" />
-                <h3 className="font-display text-3xl">إضافة تحميصة بن جديدة</h3>
-              </div>
-              <button
-                onClick={() => setIsAddModalOpen(false)}
-                className="p-1 hover:bg-kraft border border-ink/20 rounded cursor-pointer"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateProduct} className="mt-5 space-y-4 text-xs sm:text-sm">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <label className="block font-bold mb-1">اسم التحميصة (عربي) *</label>
-                  <input
-                    type="text"
-                    required
-                    value={newProdName}
-                    onChange={(e) => setNewProdName(e.target.value)}
-                    placeholder="مثال: تحميصة ممتازة، كولومبي..."
-                    className="w-full border border-ink/30 bg-background px-3 py-2 outline-none focus:border-brass"
-                  />
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-brass" />
+                  <h3 className="font-display text-3xl">إضافة تحميصة بن جديدة</h3>
                 </div>
-                <div>
-                  <label className="block font-bold mb-1">الاسم بالإنجليزي *</label>
-                  <input
-                    type="text"
-                    required
-                    value={newProdLatin}
-                    onChange={(e) => setNewProdLatin(e.target.value)}
-                    placeholder="مثال: Premium, Colombian..."
-                    dir="ltr"
-                    className="w-full border border-ink/30 bg-background px-3 py-2 outline-none focus:border-brass"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-bold mb-1">إيحاءات النكهة</label>
-                <input
-                  type="text"
-                  value={newProdNote}
-                  onChange={(e) => setNewProdNote(e.target.value)}
-                  placeholder="مثال: شوكولاتة داكنة · فواكه استوائية · كراميل"
-                  className="w-full border border-ink/30 bg-background px-3 py-2 outline-none focus:border-brass"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold mb-1">وصف المنتج</label>
-                <textarea
-                  rows={2}
-                  value={newProdDesc}
-                  onChange={(e) => setNewProdDesc(e.target.value)}
-                  placeholder="وصف تفصيلي للتحميصة وطريقة التحضير المقترحة..."
-                  className="w-full border border-ink/30 bg-background px-3 py-2 outline-none focus:border-brass"
-                />
-              </div>
-
-              {/* Color Marker */}
-              <div>
-                <label className="block font-bold mb-1">لون علامة التحميصة</label>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="color"
-                    value={newProdMarker}
-                    onChange={(e) => setNewProdMarker(e.target.value)}
-                    className="h-9 w-14 border border-ink/30 cursor-pointer bg-background p-1"
-                  />
-                  <span className="text-xs font-mono text-muted-foreground">{newProdMarker}</span>
-                </div>
-              </div>
-
-              {/* Image Upload for New Product */}
-              <div>
-                <label className="block font-bold mb-1">صورة المنتج (اختياري)</label>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => handleImageFileChange(e)}
-                    className="text-xs file:mr-2 file:py-1.5 file:px-3 file:border file:border-ink file:bg-ink file:text-cream file:cursor-pointer"
-                  />
-                  {newProdImage && (
-                    <div className="relative inline-block shrink-0">
-                      <img
-                        src={newProdImage}
-                        alt="معاينة"
-                        className="h-12 w-12 rounded border border-ink object-cover shadow-xs"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setNewProdImage("")}
-                        className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-white text-[10px] shadow-sm hover:bg-red-700 cursor-pointer"
-                        title="إزالة الصورة"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Initial Prices */}
-              <div className="border-t border-ink/20 pt-3">
-                <label className="block font-bold mb-2">الأسعار الابتدائية للأوزان (ج.م):</label>
-                <div className="grid grid-cols-3 gap-2">
-                  <div>
-                    <span className="block text-[11px] text-muted-foreground">٢٥٠ جم</span>
-                    <input
-                      type="number"
-                      required
-                      value={price250}
-                      onChange={(e) => setPrice250(e.target.value)}
-                      className="w-full border border-ink/30 bg-background px-2.5 py-1.5 font-mono text-center"
-                    />
-                  </div>
-                  <div>
-                    <span className="block text-[11px] text-muted-foreground">٥٠٠ جم</span>
-                    <input
-                      type="number"
-                      required
-                      value={price500}
-                      onChange={(e) => setPrice500(e.target.value)}
-                      className="w-full border border-ink/30 bg-background px-2.5 py-1.5 font-mono text-center"
-                    />
-                  </div>
-                  <div>
-                    <span className="block text-[11px] text-muted-foreground">١ كيلو</span>
-                    <input
-                      type="number"
-                      required
-                      value={price1000}
-                      onChange={(e) => setPrice1000(e.target.value)}
-                      className="w-full border border-ink/30 bg-background px-2.5 py-1.5 font-mono text-center"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 border-t border-ink/20 pt-4 mt-6">
                 <button
-                  type="button"
                   onClick={() => setIsAddModalOpen(false)}
-                  className="border border-ink/30 bg-background px-4 py-2 text-xs font-semibold hover:bg-kraft"
+                  className="p-1 hover:bg-kraft border border-ink/20 rounded cursor-pointer"
                 >
-                  إلغاء
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="border border-ink bg-ink px-6 py-2 text-xs font-bold text-cream hover:bg-brass hover:text-ink transition-colors disabled:opacity-60 cursor-pointer"
-                >
-                  {isSubmitting ? "جاري الحفظ..." : "حفظ وإضافة للمتجر"}
+                  <X className="h-5 w-5" />
                 </button>
               </div>
-            </form>
+
+              <form onSubmit={handleCreateProduct} className="mt-5 space-y-4 text-xs sm:text-sm">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <label className="block font-bold mb-1">اسم التحميصة (عربي) *</label>
+                    <input
+                      type="text"
+                      required
+                      value={newProdName}
+                      onChange={(e) => setNewProdName(e.target.value)}
+                      placeholder="مثال: تحميصة ممتازة، كولومبي..."
+                      className="w-full border border-ink/30 bg-background px-3 py-2 outline-none focus:border-brass"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold mb-1">الاسم بالإنجليزي *</label>
+                    <input
+                      type="text"
+                      required
+                      value={newProdLatin}
+                      onChange={(e) => setNewProdLatin(e.target.value)}
+                      placeholder="مثال: Premium, Colombian..."
+                      dir="ltr"
+                      className="w-full border border-ink/30 bg-background px-3 py-2 outline-none focus:border-brass"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-bold mb-1">إيحاءات النكهة</label>
+                  <input
+                    type="text"
+                    value={newProdNote}
+                    onChange={(e) => setNewProdNote(e.target.value)}
+                    placeholder="مثال: شوكولاتة داكنة · فواكه استوائية · كراميل"
+                    className="w-full border border-ink/30 bg-background px-3 py-2 outline-none focus:border-brass"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold mb-1">وصف المنتج</label>
+                  <textarea
+                    rows={2}
+                    value={newProdDesc}
+                    onChange={(e) => setNewProdDesc(e.target.value)}
+                    placeholder="وصف تفصيلي للتحميصة وطريقة التحضير المقترحة..."
+                    className="w-full border border-ink/30 bg-background px-3 py-2 outline-none focus:border-brass"
+                  />
+                </div>
+
+                {/* Color Marker */}
+                <div>
+                  <label className="block font-bold mb-1">لون علامة التحميصة</label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={newProdMarker}
+                      onChange={(e) => setNewProdMarker(e.target.value)}
+                      className="h-9 w-14 border border-ink/30 cursor-pointer bg-background p-1"
+                    />
+                    <span className="text-xs font-mono text-muted-foreground">{newProdMarker}</span>
+                  </div>
+                </div>
+
+                {/* Image Upload for New Product */}
+                <div>
+                  <label className="block font-bold mb-1">صورة المنتج (اختياري)</label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleImageFileChange(e)}
+                      className="text-xs file:mr-2 file:py-1.5 file:px-3 file:border file:border-ink file:bg-ink file:text-cream file:cursor-pointer"
+                    />
+                    {newProdImage && (
+                      <div className="relative inline-block shrink-0">
+                        <img
+                          src={newProdImage}
+                          alt="معاينة"
+                          className="h-12 w-12 rounded border border-ink object-cover shadow-xs"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setNewProdImage("")}
+                          className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-white text-[10px] shadow-sm hover:bg-red-700 cursor-pointer"
+                          title="إزالة الصورة"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Initial Prices */}
+                <div className="border-t border-ink/20 pt-3">
+                  <label className="block font-bold mb-2">الأسعار الابتدائية للأوزان (ج.م):</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <span className="block text-[11px] text-muted-foreground">٢٥٠ جم</span>
+                      <input
+                        type="number"
+                        required
+                        value={price250}
+                        onChange={(e) => setPrice250(e.target.value)}
+                        className="w-full border border-ink/30 bg-background px-2.5 py-1.5 font-mono text-center"
+                      />
+                    </div>
+                    <div>
+                      <span className="block text-[11px] text-muted-foreground">٥٠٠ جم</span>
+                      <input
+                        type="number"
+                        required
+                        value={price500}
+                        onChange={(e) => setPrice500(e.target.value)}
+                        className="w-full border border-ink/30 bg-background px-2.5 py-1.5 font-mono text-center"
+                      />
+                    </div>
+                    <div>
+                      <span className="block text-[11px] text-muted-foreground">١ كيلو</span>
+                      <input
+                        type="number"
+                        required
+                        value={price1000}
+                        onChange={(e) => setPrice1000(e.target.value)}
+                        className="w-full border border-ink/30 bg-background px-2.5 py-1.5 font-mono text-center"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 border-t border-ink/20 pt-4 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => setIsAddModalOpen(false)}
+                    className="border border-ink/30 bg-background px-4 py-2 text-xs font-semibold hover:bg-kraft"
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="border border-ink bg-ink px-6 py-2 text-xs font-bold text-cream hover:bg-brass hover:text-ink transition-colors disabled:opacity-60 cursor-pointer"
+                  >
+                    {isSubmitting ? "جاري الحفظ..." : "حفظ وإضافة للمتجر"}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
         </div>
       )}
 
@@ -530,137 +530,139 @@ export function ProductsTab() {
           <div className="flex min-h-full items-center justify-center p-4 sm:p-6">
             <div className="relative w-full max-w-lg border border-ink bg-cream p-6 shadow-2xl">
               <div className="flex items-center justify-between border-b border-ink/20 pb-4">
-              <h3 className="font-display text-3xl">تعديل {editingProduct.name}</h3>
-              <button
-                onClick={() => setEditingProduct(null)}
-                className="p-1 hover:bg-kraft border border-ink/20 rounded cursor-pointer"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                updateProduct(editingProduct.id, {
-                  name: editingProduct.name,
-                  latin: editingProduct.latin,
-                  note: editingProduct.note,
-                  desc: editingProduct.desc,
-                });
-                toast.success(`تم حفظ بيانات ${editingProduct.name}`);
-                setEditingProduct(null);
-              }}
-              className="mt-5 space-y-4 text-xs sm:text-sm"
-            >
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <label className="block font-bold mb-1">اسم التحميصة (عربي)</label>
-                  <input
-                    type="text"
-                    required
-                    value={editingProduct.name}
-                    onChange={(e) => setEditingProduct({ ...editingProduct, name: e.target.value })}
-                    className="w-full border border-ink/30 bg-background px-3 py-2 outline-none focus:border-brass"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold mb-1">الاسم بالإنجليزي</label>
-                  <input
-                    type="text"
-                    required
-                    value={editingProduct.latin}
-                    onChange={(e) =>
-                      setEditingProduct({ ...editingProduct, latin: e.target.value })
-                    }
-                    dir="ltr"
-                    className="w-full border border-ink/30 bg-background px-3 py-2 outline-none focus:border-brass"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-bold mb-1">إيحاءات النكهة</label>
-                <input
-                  type="text"
-                  value={editingProduct.note}
-                  onChange={(e) => setEditingProduct({ ...editingProduct, note: e.target.value })}
-                  className="w-full border border-ink/30 bg-background px-3 py-2 outline-none focus:border-brass"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold mb-1">الوصف</label>
-                <textarea
-                  rows={3}
-                  value={editingProduct.desc}
-                  onChange={(e) => setEditingProduct({ ...editingProduct, desc: e.target.value })}
-                  className="w-full border border-ink/30 bg-background px-3 py-2 outline-none focus:border-brass"
-                />
-              </div>
-
-              {/* Image Manager in Edit Modal */}
-              <div>
-                <label className="block font-bold mb-1">صورة المنتج</label>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      const reader = new FileReader();
-                      reader.onload = (ev) => {
-                        setEditingProduct({
-                          ...editingProduct,
-                          image: ev.target?.result as string,
-                        });
-                      };
-                      reader.readAsDataURL(file);
-                    }}
-                    className="text-xs file:mr-2 file:py-1.5 file:px-3 file:border file:border-ink file:bg-ink file:text-cream file:cursor-pointer"
-                  />
-                  {editingProduct.image && (
-                    <div className="flex items-center gap-2">
-                      <img
-                        src={editingProduct.image}
-                        alt="معاينة"
-                        className="h-12 w-12 rounded border border-ink object-cover shadow-xs"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingProduct({ ...editingProduct, image: undefined });
-                          removeProductImage(editingProduct.id);
-                          toast.info(`تم حذف صورة ${editingProduct.name}`);
-                        }}
-                        className="text-xs font-bold text-red-600 hover:text-red-800 underline cursor-pointer"
-                      >
-                        حذف الصورة
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 border-t border-ink/20 pt-4 mt-6">
+                <h3 className="font-display text-3xl">تعديل {editingProduct.name}</h3>
                 <button
-                  type="button"
                   onClick={() => setEditingProduct(null)}
-                  className="border border-ink/30 bg-background px-4 py-2 text-xs font-semibold hover:bg-kraft"
+                  className="p-1 hover:bg-kraft border border-ink/20 rounded cursor-pointer"
                 >
-                  إلغاء
-                </button>
-                <button
-                  type="submit"
-                  className="border border-ink bg-ink px-6 py-2 text-xs font-bold text-cream hover:bg-brass hover:text-ink transition-colors cursor-pointer"
-                >
-                  حفظ التعديلات
+                  <X className="h-5 w-5" />
                 </button>
               </div>
-            </form>
+
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  updateProduct(editingProduct.id, {
+                    name: editingProduct.name,
+                    latin: editingProduct.latin,
+                    note: editingProduct.note,
+                    desc: editingProduct.desc,
+                  });
+                  toast.success(`تم حفظ بيانات ${editingProduct.name}`);
+                  setEditingProduct(null);
+                }}
+                className="mt-5 space-y-4 text-xs sm:text-sm"
+              >
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <label className="block font-bold mb-1">اسم التحميصة (عربي)</label>
+                    <input
+                      type="text"
+                      required
+                      value={editingProduct.name}
+                      onChange={(e) =>
+                        setEditingProduct({ ...editingProduct, name: e.target.value })
+                      }
+                      className="w-full border border-ink/30 bg-background px-3 py-2 outline-none focus:border-brass"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold mb-1">الاسم بالإنجليزي</label>
+                    <input
+                      type="text"
+                      required
+                      value={editingProduct.latin}
+                      onChange={(e) =>
+                        setEditingProduct({ ...editingProduct, latin: e.target.value })
+                      }
+                      dir="ltr"
+                      className="w-full border border-ink/30 bg-background px-3 py-2 outline-none focus:border-brass"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-bold mb-1">إيحاءات النكهة</label>
+                  <input
+                    type="text"
+                    value={editingProduct.note}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, note: e.target.value })}
+                    className="w-full border border-ink/30 bg-background px-3 py-2 outline-none focus:border-brass"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold mb-1">الوصف</label>
+                  <textarea
+                    rows={3}
+                    value={editingProduct.desc}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, desc: e.target.value })}
+                    className="w-full border border-ink/30 bg-background px-3 py-2 outline-none focus:border-brass"
+                  />
+                </div>
+
+                {/* Image Manager in Edit Modal */}
+                <div>
+                  <label className="block font-bold mb-1">صورة المنتج</label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = (ev) => {
+                          setEditingProduct({
+                            ...editingProduct,
+                            image: ev.target?.result as string,
+                          });
+                        };
+                        reader.readAsDataURL(file);
+                      }}
+                      className="text-xs file:mr-2 file:py-1.5 file:px-3 file:border file:border-ink file:bg-ink file:text-cream file:cursor-pointer"
+                    />
+                    {editingProduct.image && (
+                      <div className="flex items-center gap-2">
+                        <img
+                          src={editingProduct.image}
+                          alt="معاينة"
+                          className="h-12 w-12 rounded border border-ink object-cover shadow-xs"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingProduct({ ...editingProduct, image: undefined });
+                            removeProductImage(editingProduct.id);
+                            toast.info(`تم حذف صورة ${editingProduct.name}`);
+                          }}
+                          className="text-xs font-bold text-red-600 hover:text-red-800 underline cursor-pointer"
+                        >
+                          حذف الصورة
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 border-t border-ink/20 pt-4 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => setEditingProduct(null)}
+                    className="border border-ink/30 bg-background px-4 py-2 text-xs font-semibold hover:bg-kraft"
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    type="submit"
+                    className="border border-ink bg-ink px-6 py-2 text-xs font-bold text-cream hover:bg-brass hover:text-ink transition-colors cursor-pointer"
+                  >
+                    حفظ التعديلات
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
         </div>
       )}
     </div>

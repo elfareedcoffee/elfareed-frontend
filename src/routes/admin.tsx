@@ -38,10 +38,10 @@ function AdminPage() {
     }
     fetch("/api/v1/admin/auth/me", {
       headers: {
-        "Authorization": `Bearer ${token}`
-      }
+        Authorization: `Bearer ${token}`,
+      },
     })
-      .then(res => {
+      .then((res) => {
         if (res.ok) {
           setIsAuthenticated(true);
           fetchAdminData();
@@ -55,7 +55,11 @@ function AdminPage() {
   }, []);
 
   if (isAuthenticated === null) {
-    return <div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="w-10 h-10 animate-spin text-brass" /></div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-10 h-10 animate-spin text-brass" />
+      </div>
+    );
   }
 
   if (isAuthenticated === false) {

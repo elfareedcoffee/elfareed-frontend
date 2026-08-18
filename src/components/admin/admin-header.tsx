@@ -108,7 +108,7 @@ export function AdminHeader({ onLogout }: { onLogout?: () => void }) {
             <span className="inline sm:hidden">المتجر</span>
             <ExternalLink className="h-3 w-3 opacity-70" />
           </Link>
-          
+
           {/* Logout button */}
           <button
             onClick={handleLogout}

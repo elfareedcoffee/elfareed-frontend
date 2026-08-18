@@ -55,7 +55,7 @@ export function AdminLogin({ onLoginSuccess }: { onLoginSuccess: () => void }) {
               {error}
             </div>
           )}
-          
+
           <div className="space-y-2 text-right">
             <label className="text-sm font-bold text-ink">اسم المستخدم</label>
             <input

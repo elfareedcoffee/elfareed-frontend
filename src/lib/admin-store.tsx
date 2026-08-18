@@ -45,7 +45,10 @@ type AdminStoreContextValue = {
   updateProductImage: (productId: string, fileOrUrl?: File | string | undefined) => Promise<void>;
   removeProductImage: (productId: string) => Promise<void>;
   updateProduct: (productId: string, updates: Partial<AdminProduct>) => Promise<void>;
-  addProduct: (product: Omit<AdminProduct, "id"> & { id?: string }, imageFile?: File) => Promise<AdminProduct | undefined>;
+  addProduct: (
+    product: Omit<AdminProduct, "id"> & { id?: string },
+    imageFile?: File,
+  ) => Promise<AdminProduct | undefined>;
   deleteProduct: (productId: string) => void;
   toggleProductAvailability: (productId: string) => Promise<void>;
   createOrder: (data: any) => Order;
@@ -91,70 +94,83 @@ export function getAdminHeaders(extraHeaders: Record<string, string> = {}): Reco
   return headers;
 }
 
-const INITIAL_PRODUCTS: AdminProduct[] = defaultProducts.map(p => ({
+const INITIAL_PRODUCTS: AdminProduct[] = defaultProducts.map((p) => ({
   id: p.id,
   name: p.name,
   desc: p.desc,
   latin: p.latin,
   note: p.note,
   marker: p.marker,
-  weights: p.weights.map(w => ({
+  weights: p.weights.map((w) => ({
     id: w.id,
     label: w.label,
     grams: w.grams,
-    price: w.price
+    price: w.price,
   })),
-  available: true
+  available: true,
 }));
 
 function mapOrderStatus(status: string): OrderStatus {
   switch (status) {
     case "PENDING":
-    case "CONFIRMED": return "جديد";
+    case "CONFIRMED":
+      return "جديد";
     case "PREPARING":
     case "READY_FOR_DELIVERY":
-    case "OUT_FOR_DELIVERY": return "قيد التجهيز";
-    case "DELIVERED": return "تم التوصيل";
-    case "CANCELLED": return "ملغي";
-    default: return "جديد";
+    case "OUT_FOR_DELIVERY":
+      return "قيد التجهيز";
+    case "DELIVERED":
+      return "تم التوصيل";
+    case "CANCELLED":
+      return "ملغي";
+    default:
+      return "جديد";
   }
 }
 
 function mapOrderStatusToBackend(status: OrderStatus): string {
   switch (status) {
-    case "جديد": return "PENDING";
-    case "قيد التجهيز": return "PREPARING";
-    case "تم التوصيل": return "DELIVERED";
-    case "ملغي": return "CANCELLED";
-    default: return "PENDING";
+    case "جديد":
+      return "PENDING";
+    case "قيد التجهيز":
+      return "PREPARING";
+    case "تم التوصيل":
+      return "DELIVERED";
+    case "ملغي":
+      return "CANCELLED";
+    default:
+      return "PENDING";
   }
 }
 
 function mapBackendOrder(o: any): Order {
+  const items = Array.isArray(o.items) ? o.items : [];
+  const area = [o.governorate, o.city].filter(Boolean).join(" - ") || "القاهرة";
   return {
-    id: o.id,
-    orderNumber: o.order_number,
+    id: o.id || `ord-${Math.random()}`,
+    orderNumber: o.order_number || `FC-${Math.floor(1000 + Math.random() * 9000)}`,
     customer: {
-      name: o.customer_name,
-      phone: o.customer_phone,
-      address: o.delivery_address,
-      area: o.governorate + " - " + o.city,
+      name: o.customer_name || "عميل",
+      phone: o.customer_phone || "",
+      address: o.delivery_address || "",
+      area: area,
       notes: o.delivery_notes || "",
     },
-    items: o.items.map((i: any) => ({
-      id: i.id,
-      productId: i.product_variant_id || i.id,
-      name: i.product_name_ar,
-      weight: i.weight_grams + " جم",
-      grams: i.weight_grams,
-      price: Number(i.unit_price),
-      qty: i.quantity,
+    items: items.map((i: any) => ({
+      id: i.id || `${i.product_variant_id || Math.random()}`,
+      productId: i.original_product_id || i.product_variant_id || i.id,
+      variantId: i.product_variant_id,
+      name: i.product_name_ar || "قهوة فريد",
+      weight: i.weight_grams ? `${i.weight_grams} جم` : "٢٥٠ جم",
+      grams: i.weight_grams || 250,
+      price: Number(i.unit_price) || 0,
+      qty: i.quantity || 1,
     })),
-    subtotal: Number(o.subtotal),
-    shipping: Number(o.delivery_fee),
-    total: Number(o.total),
+    subtotal: Number(o.subtotal) || 0,
+    shipping: Number(o.delivery_fee) || 0,
+    total: Number(o.total) || 0,
     status: mapOrderStatus(o.order_status),
-    createdAt: o.created_at,
+    createdAt: o.created_at || new Date().toISOString(),
   };
 }
 
@@ -166,7 +182,7 @@ function mapBackendProduct(p: any): AdminProduct {
     name = arTranslation?.name || "بدون اسم";
     desc = arTranslation?.description || "";
   }
-  
+
   let marker = "var(--roast-medium)";
   let latin = "Medium";
   let note = "كراميل · بندق · توازن";
@@ -187,7 +203,7 @@ function mapBackendProduct(p: any): AdminProduct {
 
   try {
     const meta = JSON.parse(desc);
-    if (meta && typeof meta === 'object' && meta.desc !== undefined) {
+    if (meta && typeof meta === "object" && meta.desc !== undefined) {
       desc = meta.desc;
       if (meta.latin) latin = meta.latin;
       if (meta.note) note = meta.note;
@@ -204,14 +220,15 @@ function mapBackendProduct(p: any): AdminProduct {
     latin,
     note,
     marker: marker,
-    weights: p.variants?.map((v: any) => ({
-      id: v.id,
-      label: v.weight_grams === 1000 ? "١ كيلو" : (v.weight_grams === 500 ? "٥٠٠ جم" : "٢٥٠ جم"),
-      grams: v.weight_grams,
-      price: Number(v.price)
-    })) || [],
+    weights:
+      p.variants?.map((v: any) => ({
+        id: v.id,
+        label: v.weight_grams === 1000 ? "١ كيلو" : v.weight_grams === 500 ? "٥٠٠ جم" : "٢٥٠ جم",
+        grams: v.weight_grams,
+        price: Number(v.price),
+      })) || [],
     image: p.image_url || undefined,
-    available: p.is_active ?? true
+    available: p.is_active ?? true,
   };
 }
 
@@ -245,14 +262,14 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
       if (productsRes.ok) {
         const data = await productsRes.json();
         if (Array.isArray(data) && data.length > 0) {
-           setProducts(data.map(mapBackendProduct));
+          setProducts(data.map(mapBackendProduct));
         }
       } else {
         const publicRes = await fetch("/api/v1/public/products/");
         if (publicRes.ok) {
           const data = await publicRes.json();
           if (Array.isArray(data) && data.length > 0) {
-             setProducts(data.map(mapBackendProduct));
+            setProducts(data.map(mapBackendProduct));
           }
         }
       }
@@ -261,7 +278,7 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
       if (ordersRes.ok) {
         const ordersData = await ordersRes.json();
         if (ordersData.items) {
-           setOrders(ordersData.items.map(mapBackendOrder));
+          setOrders(ordersData.items.map(mapBackendOrder));
         }
       }
     } catch (e) {
@@ -287,13 +304,13 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
     );
 
     try {
-      const product = products.find(p => p.id === productId);
-      const variant = product?.weights.find(w => w.grams === grams);
+      const product = products.find((p) => p.id === productId);
+      const variant = product?.weights.find((w) => w.grams === grams);
       if (variant && variant.id) {
         await fetch(`/api/v1/admin/variants/${variant.id}`, {
           method: "PUT",
           headers: getAdminHeaders({ "Content-Type": "application/json" }),
-          body: JSON.stringify({ price: Math.max(1, newPrice) })
+          body: JSON.stringify({ price: Math.max(1, newPrice) }),
         });
       }
     } catch (e) {
@@ -309,19 +326,19 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
         const res = await fetch(`/api/v1/admin/products/${productId}/image`, {
           method: "POST",
           headers: getAdminHeaders(),
-          body: formData
+          body: formData,
         });
         if (res.ok) {
           const updated = await res.json();
-          setProducts(prev => prev.map(p => p.id === productId ? mapBackendProduct(updated) : p));
+          setProducts((prev) =>
+            prev.map((p) => (p.id === productId ? mapBackendProduct(updated) : p)),
+          );
         }
       } catch (e) {
         console.error("Failed to upload product image", e);
       }
     } else if (typeof fileOrUrl === "string") {
-      setProducts((prev) =>
-        prev.map((p) => (p.id === productId ? { ...p, image: fileOrUrl } : p))
-      );
+      setProducts((prev) => prev.map((p) => (p.id === productId ? { ...p, image: fileOrUrl } : p)));
     }
   };
 
@@ -332,12 +349,12 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
         const updated = { ...p };
         delete updated.image;
         return updated;
-      })
+      }),
     );
     try {
       await fetch(`/api/v1/admin/products/${productId}/image`, {
         method: "DELETE",
-        headers: getAdminHeaders()
+        headers: getAdminHeaders(),
       });
     } catch (e) {
       console.error("Failed to delete product image", e);
@@ -346,28 +363,30 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
 
   const updateProduct = async (productId: string, updates: Partial<AdminProduct>) => {
     setProducts((prev) => prev.map((p) => (p.id === productId ? { ...p, ...updates } : p)));
-    
+
     try {
-      const oldProduct = products.find(p => p.id === productId);
+      const oldProduct = products.find((p) => p.id === productId);
       if (!oldProduct) return;
       const combined = { ...oldProduct, ...updates };
-      
+
       const payload = {
-        translations: [{
-          language: "ar",
-          name: combined.name,
-          description: JSON.stringify({
-            desc: combined.desc,
-            latin: combined.latin,
-            note: combined.note,
-            marker: combined.marker
-          })
-        }]
+        translations: [
+          {
+            language: "ar",
+            name: combined.name,
+            description: JSON.stringify({
+              desc: combined.desc,
+              latin: combined.latin,
+              note: combined.note,
+              marker: combined.marker,
+            }),
+          },
+        ],
       };
       await fetch(`/api/v1/admin/products/${productId}/translations`, {
         method: "PUT",
         headers: getAdminHeaders({ "Content-Type": "application/json" }),
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
     } catch (e) {
       console.error("Failed to update product details", e);
@@ -376,8 +395,8 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
 
   const addProduct = async (
     newProd: Omit<AdminProduct, "id"> & { id?: string },
-    imageFile?: File
-  ): Promise<AdminProduct | undefined> => {
+    imageFile?: File,
+  ): Promise<AdminProduct> => {
     const tempId = newProd.id || `roast-${Date.now()}`;
     const productToAdd: AdminProduct = {
       ...newProd,
@@ -392,79 +411,102 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
               { label: "١ كيلو", grams: 1000, price: 530 },
             ],
     };
-    
-    setProducts((prev) => [...prev, productToAdd]);
 
-    try {
-      const categoryId = "b58774a1-eea1-42c9-b91c-f58bca51fc1b"; // Default category
-      
-      const payload = {
-        category_id: categoryId,
-        is_active: true,
-        translations: [{
+    const categoryId = "b58774a1-eea1-42c9-b91c-f58bca51fc1b"; // Default category
+
+    const payload = {
+      category_id: categoryId,
+      is_active: true,
+      translations: [
+        {
           language: "ar",
           name: productToAdd.name,
           description: JSON.stringify({
             desc: productToAdd.desc,
             latin: productToAdd.latin,
             note: productToAdd.note,
-            marker: productToAdd.marker
-          })
-        }],
-        variants: productToAdd.weights.map(w => ({
-          weight_grams: w.grams,
-          grind_type: "TURKISH",
-          price: w.price,
-          stock_quantity: 100,
-          is_active: true
-        }))
-      };
+            marker: productToAdd.marker,
+          }),
+        },
+        {
+          language: "en",
+          name: productToAdd.latin || productToAdd.name,
+          description: productToAdd.desc || "Fareed Coffee Roast",
+        },
+      ],
+      variants: productToAdd.weights.map((w) => ({
+        weight_grams: w.grams,
+        grind_type: "TURKISH",
+        price: w.price,
+        stock_quantity: 100,
+        is_active: true,
+      })),
+    };
 
-      const res = await fetch("/api/v1/admin/products/", {
-        method: "POST",
-        headers: getAdminHeaders({ "Content-Type": "application/json" }),
-        body: JSON.stringify(payload)
-      });
-      
-      if (res.ok) {
-        let createdProduct = await res.json();
-        
-        if (imageFile) {
-          const imgData = new FormData();
-          imgData.append("file", imageFile);
-          const imgRes = await fetch(`/api/v1/admin/products/${createdProduct.id}/image`, {
-            method: "POST",
-            headers: getAdminHeaders(),
-            body: imgData
-          });
-          if (imgRes.ok) {
-            createdProduct = await imgRes.json();
-          }
-        }
-        
-        const mapped = mapBackendProduct(createdProduct);
-        setProducts((prev) => prev.map((p) => p.id === tempId ? mapped : p));
-        return mapped;
-      }
-    } catch (e) {
-      console.error("Failed to create product", e);
+    const res = await fetch("/api/v1/admin/products/", {
+      method: "POST",
+      headers: getAdminHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      const message = errData?.detail || errData?.message || "فشل حفظ التحميصة في الخادم";
+      throw new Error(typeof message === "string" ? message : JSON.stringify(message));
     }
-    return undefined;
+
+    let createdProduct = await res.json();
+
+    if (imageFile) {
+      try {
+        const imgData = new FormData();
+        imgData.append("file", imageFile);
+        const imgRes = await fetch(`/api/v1/admin/products/${createdProduct.id}/image`, {
+          method: "POST",
+          headers: getAdminHeaders(),
+          body: imgData,
+        });
+        if (imgRes.ok) {
+          createdProduct = await imgRes.json();
+        }
+      } catch (imgErr) {
+        console.error("Image upload failed:", imgErr);
+      }
+    }
+
+    const mapped = mapBackendProduct(createdProduct);
+    setProducts((prev) => [...prev.filter((p) => p.id !== tempId && p.id !== mapped.id), mapped]);
+    return mapped;
   };
 
-  const deleteProduct = (productId: string) => {
+  const deleteProduct = async (productId: string) => {
     setProducts((prev) => prev.filter((p) => p.id !== productId));
+    try {
+      const res = await fetch(`/api/v1/admin/products/${productId}`, {
+        method: "DELETE",
+        headers: getAdminHeaders(),
+      });
+      if (!res.ok) {
+        // Fallback to deactivate if DELETE endpoint is not supported
+        await fetch(`/api/v1/admin/products/${productId}/deactivate`, {
+          method: "PATCH",
+          headers: getAdminHeaders(),
+        });
+      }
+    } catch (e) {
+      console.error("Failed to delete product from backend:", e);
+    }
   };
 
   const toggleProductAvailability = async (productId: string) => {
-    const product = products.find(p => p.id === productId);
+    const product = products.find((p) => p.id === productId);
     if (!product) return;
     const isActive = !product.available;
     try {
       const endpoint = isActive ? "activate" : "deactivate";
       await fetch(`/api/v1/admin/products/${productId}/${endpoint}`, {
         method: "PATCH",
-        headers: getAdminHeaders()
+        headers: getAdminHeaders(),
       });
       setProducts((prev) =>
         prev.map((p) => (p.id === productId ? { ...p, available: isActive } : p)),
@@ -496,7 +538,7 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
       await fetch(`/api/v1/admin/orders/${orderId}/status`, {
         method: "PUT",
         headers: getAdminHeaders({ "Content-Type": "application/json" }),
-        body: JSON.stringify({ status: backendStatus })
+        body: JSON.stringify({ status: backendStatus }),
       });
       setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status } : o)));
     } catch (e) {
@@ -508,7 +550,7 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
     try {
       await fetch(`/api/v1/admin/orders/${orderId}/cancel`, {
         method: "POST",
-        headers: getAdminHeaders()
+        headers: getAdminHeaders(),
       });
       setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: "ملغي" } : o)));
     } catch (e) {

@@ -26,9 +26,59 @@ export const Route = createFileRoute("/checkout")({
   component: Checkout,
 });
 
+function normalizeEgyptianPhone(phone: string): {
+  valid: boolean;
+  formatted: string;
+  error?: string;
+} {
+  let cleaned = phone
+    .replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)))
+    .replace(/[\s\-\(\)\.]/g, "")
+    .trim();
+
+  if (cleaned.startsWith("+20")) {
+    cleaned = cleaned.substring(3);
+  } else if (cleaned.startsWith("0020")) {
+    cleaned = cleaned.substring(4);
+  } else if (cleaned.startsWith("20")) {
+    cleaned = cleaned.substring(2);
+  }
+
+  if (cleaned.startsWith("01")) {
+    cleaned = cleaned.substring(1);
+  }
+
+  if (!/^1[0125][0-9]{8}$/.test(cleaned)) {
+    return {
+      valid: false,
+      formatted: "",
+      error: "يرجى إدخال رقم هاتف مصري صحيح يبدأ بـ 010 أو 011 أو 012 أو 015 (11 رقم)",
+    };
+  }
+
+  return {
+    valid: true,
+    formatted: `+201${cleaned.substring(1)}`,
+  };
+}
+
+function parseApiErrorMessage(errData: any): string {
+  if (!errData) return "حدث خطأ أثناء تسجيل الطلب";
+  if (typeof errData === "string") return errData;
+  if (Array.isArray(errData.detail)) {
+    const messages = errData.detail.map((d: any) => d.msg || d.message).filter(Boolean);
+    if (messages.length) return messages.join(" - ");
+  }
+  if (typeof errData.detail === "string") return errData.detail;
+  if (errData.detail?.message) return errData.detail.message;
+  if (errData.error?.message) return errData.error.message;
+  if (errData.message) return errData.message;
+  return "حدث خطأ أثناء تسجيل الطلب";
+}
+
 function Checkout() {
   const { items, total, clear, setQty } = useCart();
-  const { createOrder, settings } = useAdminStore();
+  const { createOrder, settings, products } = useAdminStore();
   const [done, setDone] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createdOrderNumber, setCreatedOrderNumber] = useState<string>("");
@@ -99,31 +149,53 @@ function Checkout() {
                 return;
               }
 
+              const formData = new FormData(e.currentTarget);
+              const rawPhone = (formData.get("phone") as string) || "";
+              const phoneValidation = normalizeEgyptianPhone(rawPhone);
+              if (!phoneValidation.valid) {
+                toast.error(phoneValidation.error || "رقم الهاتف غير صحيح");
+                return;
+              }
+
               setIsSubmitting(true);
               try {
-                const formData = new FormData(e.currentTarget);
                 const customer = {
-                  name: (formData.get("name") as string) || "",
-                  phone: (formData.get("phone") as string) || "",
-                  address: (formData.get("address") as string) || "",
-                  area: (formData.get("area") as string) || "",
-                  notes: (formData.get("notes") as string) || "",
+                  name: ((formData.get("name") as string) || "").trim(),
+                  phone: phoneValidation.formatted,
+                  address: ((formData.get("address") as string) || "").trim(),
+                  area: ((formData.get("area") as string) || "").trim(),
+                  notes: ((formData.get("notes") as string) || "").trim(),
                 };
 
                 // 1. Add each item to the backend cart, tracking cart_id
                 let lastCartId: string | null = null;
                 for (const item of items) {
-                  if (!item.variantId) continue;
-                  const cartHeaders: Record<string, string> = { "Content-Type": "application/json" };
+                  let variantId = item.variantId;
+                  if (!variantId) {
+                    const prod = products.find(
+                      (p) => p.id === item.productId || p.name === item.name,
+                    );
+                    const weightObj = prod?.weights.find((w) => w.grams === item.grams);
+                    variantId = weightObj?.id;
+                  }
+
+                  if (!variantId) {
+                    console.warn("Skipping item without variantId:", item);
+                    continue;
+                  }
+
+                  const cartHeaders: Record<string, string> = {
+                    "Content-Type": "application/json",
+                  };
                   if (lastCartId) cartHeaders["x-cart-id"] = lastCartId;
 
                   const cartRes = await fetch("/api/v1/public/cart/items", {
                     method: "POST",
                     headers: cartHeaders,
                     body: JSON.stringify({
-                      product_variant_id: item.variantId,
-                      quantity: item.qty
-                    })
+                      product_variant_id: variantId,
+                      quantity: item.qty,
+                    }),
                   });
 
                   if (cartRes.ok) {
@@ -131,12 +203,10 @@ function Checkout() {
                     if (cartData?.id) {
                       lastCartId = cartData.id;
                     }
+                  } else {
+                    const errData = await cartRes.json().catch(() => ({}));
+                    console.error("Failed to add cart item:", errData);
                   }
-                }
-
-                let apiPhone = customer.phone.trim();
-                if (apiPhone.startsWith("01")) {
-                  apiPhone = "+20" + apiPhone.substring(1);
                 }
 
                 // 2. Submit order with tracked cart_id
@@ -148,18 +218,18 @@ function Checkout() {
                   headers: orderHeaders,
                   body: JSON.stringify({
                     customer_name: customer.name,
-                    customer_phone: apiPhone,
+                    customer_phone: customer.phone,
                     governorate: customer.area || "القاهرة",
                     city: customer.area || "القاهرة",
                     delivery_address: customer.address,
                     delivery_notes: customer.notes || null,
-                    payment_method: "COD"
-                  })
+                    payment_method: "COD",
+                  }),
                 });
 
                 if (res.ok) {
                   const data = await res.json();
-                  
+
                   // Update local UI state
                   const newOrd = createOrder({
                     customer,
@@ -176,12 +246,12 @@ function Checkout() {
                   setDone(true);
                   toast.success(`تم تسجيل طلبك بنجاح برقم #${data.order_number}`);
                 } else {
-                  const errData = await res.json();
-                  toast.error(errData.detail?.message || errData.error?.message || "حدث خطأ أثناء تسجيل الطلب");
+                  const errData = await res.json().catch(() => ({}));
+                  toast.error(parseApiErrorMessage(errData));
                 }
               } catch (err) {
                 console.error("Checkout failed:", err);
-                toast.error("حدث خطأ في الاتصال بالخادم");
+                toast.error("حدث خطأ في الاتصال بالخادم، يرجى المحاولة مرة أخرى");
               } finally {
                 setIsSubmitting(false);
               }
