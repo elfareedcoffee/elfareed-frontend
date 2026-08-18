@@ -40,7 +40,11 @@ type AdminStoreContextValue = {
   products: AdminProduct[];
   orders: Order[];
   settings: StoreSettings;
-  fetchAdminData: () => Promise<void>;
+  isAuthenticated: boolean | null;
+  token: string | null;
+  login: (username: string, password: string) => Promise<void>;
+  logout: () => void;
+  fetchAdminData: (tokenOverride?: string) => Promise<void>;
   updatePrice: (productId: string, grams: number, newPrice: number) => Promise<void>;
   updateProductImage: (productId: string, fileOrUrl?: File | string | undefined) => Promise<void>;
   removeProductImage: (productId: string) => Promise<void>;
@@ -79,17 +83,19 @@ const INITIAL_SETTINGS: StoreSettings = {
   wholesalePhones: ["01020073246", "01005642565"],
 };
 
-export function getAdminHeaders(extraHeaders: Record<string, string> = {}): Record<string, string> {
+export function getAdminHeaders(
+  extraHeaders: Record<string, string> = {},
+  explicitToken?: string,
+): Record<string, string> {
   const headers: Record<string, string> = { ...extraHeaders };
-  if (typeof window !== "undefined") {
-    const token = localStorage.getItem("admin_token");
-    const csrf = localStorage.getItem("admin_csrf");
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
-    if (csrf) {
-      headers["X-CSRF-Token"] = csrf;
-    }
+  const token =
+    explicitToken || (typeof window !== "undefined" ? localStorage.getItem("admin_token") : null);
+  const csrf = typeof window !== "undefined" ? localStorage.getItem("admin_csrf") : null;
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  if (csrf) {
+    headers["X-CSRF-Token"] = csrf;
   }
   return headers;
 }
@@ -235,6 +241,13 @@ function mapBackendProduct(p: any): AdminProduct {
 export function AdminStoreProvider({ children }: { children: ReactNode }) {
   const [products, setProducts] = useState<AdminProduct[]>(INITIAL_PRODUCTS);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [token, setToken] = useState<string | null>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("admin_token");
+    }
+    return null;
+  });
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
   const [settings, setSettings] = useState<StoreSettings>(() => {
     try {
@@ -254,22 +267,61 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
     }
   }, [settings]);
 
-  const fetchAdminData = async () => {
+  const login = async (username: string, password: string) => {
+    const res = await fetch("/api/v1/admin/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData?.detail || errData?.error?.message || "بيانات الدخول غير صحيحة");
+    }
+
+    const data = await res.json();
+    if (data?.access_token) {
+      localStorage.setItem("admin_token", data.access_token);
+      setToken(data.access_token);
+    }
+    if (data?.csrf_token) {
+      localStorage.setItem("admin_csrf", data.csrf_token);
+    }
+
+    setIsAuthenticated(true);
+    await fetchAdminData(data?.access_token);
+  };
+
+  const logout = () => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("admin_token");
+      localStorage.removeItem("admin_csrf");
+    }
+    setToken(null);
+    setIsAuthenticated(false);
+    setOrders([]);
+  };
+
+  const fetchAdminData = async (tokenOverride?: string) => {
     try {
-      const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
+      const activeToken =
+        tokenOverride ||
+        token ||
+        (typeof window !== "undefined" ? localStorage.getItem("admin_token") : null);
 
-      if (token) {
-        const headers = getAdminHeaders();
-        const productsRes = await fetch("/api/v1/admin/products/", { headers });
+      if (activeToken) {
+        const headers = getAdminHeaders({}, activeToken);
+        const [productsRes, ordersRes] = await Promise.allSettled([
+          fetch("/api/v1/admin/products/", { headers }),
+          fetch("/api/v1/admin/orders/?size=100", { headers }),
+        ]);
 
-        if (productsRes.ok) {
-          const data = await productsRes.json();
+        if (productsRes.status === "fulfilled" && productsRes.value.ok) {
+          const data = await productsRes.value.json();
           if (Array.isArray(data) && data.length > 0) {
             setProducts(data.map(mapBackendProduct));
           }
-        } else if (productsRes.status === 401) {
-          localStorage.removeItem("admin_token");
-          localStorage.removeItem("admin_csrf");
+        } else {
           // Fall back to public products
           const publicRes = await fetch("/api/v1/public/products/");
           if (publicRes.ok) {
@@ -280,9 +332,8 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
           }
         }
 
-        const ordersRes = await fetch("/api/v1/admin/orders/?size=100", { headers });
-        if (ordersRes.ok) {
-          const ordersData = await ordersRes.json();
+        if (ordersRes.status === "fulfilled" && ordersRes.value.ok) {
+          const ordersData = await ordersRes.value.json();
           if (ordersData.items) {
             setOrders(ordersData.items.map(mapBackendOrder));
           }
@@ -303,7 +354,29 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    fetchAdminData();
+    const savedToken = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
+    if (savedToken) {
+      fetch("/api/v1/admin/auth/me", {
+        headers: { Authorization: `Bearer ${savedToken}` },
+      })
+        .then((res) => {
+          if (res.ok) {
+            setIsAuthenticated(true);
+            setToken(savedToken);
+            fetchAdminData(savedToken);
+          } else {
+            setIsAuthenticated(false);
+            fetchAdminData();
+          }
+        })
+        .catch(() => {
+          setIsAuthenticated(false);
+          fetchAdminData();
+        });
+    } else {
+      setIsAuthenticated(false);
+      fetchAdminData();
+    }
   }, []);
 
   const updatePrice = async (productId: string, grams: number, newPrice: number) => {
@@ -667,6 +740,10 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
       products,
       orders,
       settings,
+      isAuthenticated,
+      token,
+      login,
+      logout,
       fetchAdminData,
       updatePrice,
       updateProductImage,
@@ -682,7 +759,7 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
       resetToDefaults,
       analytics,
     }),
-    [products, orders, settings, analytics],
+    [products, orders, settings, isAuthenticated, token, analytics],
   );
 
   return <AdminStoreContext.Provider value={value}>{children}</AdminStoreContext.Provider>;

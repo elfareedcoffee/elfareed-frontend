@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Coffee, Loader2 } from "lucide-react";
+import { useAdminStore } from "@/lib/admin-store";
 
-export function AdminLogin({ onLoginSuccess }: { onLoginSuccess: () => void }) {
+export function AdminLogin({ onLoginSuccess }: { onLoginSuccess?: () => void }) {
+  const { login } = useAdminStore();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -13,26 +15,10 @@ export function AdminLogin({ onLoginSuccess }: { onLoginSuccess: () => void }) {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/v1/admin/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
-      });
-
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData?.detail || errData?.error?.message || "بيانات الدخول غير صحيحة");
+      await login(username.trim(), password.trim());
+      if (onLoginSuccess) {
+        onLoginSuccess();
       }
-
-      const data = await res.json();
-      if (data?.access_token) {
-        localStorage.setItem("admin_token", data.access_token);
-      }
-      if (data?.csrf_token) {
-        localStorage.setItem("admin_csrf", data.csrf_token);
-      }
-
-      onLoginSuccess();
     } catch (err: any) {
       setError(err.message || "حدث خطأ أثناء تسجيل الدخول");
     } finally {
