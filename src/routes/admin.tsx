@@ -32,9 +32,13 @@ function AdminPage() {
 
   useEffect(() => {
     const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
+    if (!token) {
+      setIsAuthenticated(false);
+      return;
+    }
     fetch("/api/v1/admin/auth/me", {
       headers: {
-        ...(token ? { "Authorization": `Bearer ${token}` } : {})
+        "Authorization": `Bearer ${token}`
       }
     })
       .then(res => {
@@ -42,6 +46,8 @@ function AdminPage() {
           setIsAuthenticated(true);
           fetchAdminData();
         } else {
+          localStorage.removeItem("admin_token");
+          localStorage.removeItem("admin_csrf");
           setIsAuthenticated(false);
         }
       })
