@@ -346,19 +346,10 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
           }
         }
 
-        if (ordersRes.status === "fulfilled") {
-          if (ordersRes.value.ok) {
-            const ordersData = await ordersRes.value.json();
-            if (ordersData.items) {
-              setOrders(ordersData.items.map(mapBackendOrder));
-            }
-          } else if (ordersRes.value.status === 401) {
-            if (typeof window !== "undefined") {
-              localStorage.removeItem("admin_token");
-              localStorage.removeItem("admin_csrf");
-            }
-            setToken(null);
-            setIsAuthenticated(false);
+        if (ordersRes.status === "fulfilled" && ordersRes.value.ok) {
+          const ordersData = await ordersRes.value.json();
+          if (ordersData.items) {
+            setOrders(ordersData.items.map(mapBackendOrder));
           }
         }
       } else {
@@ -405,15 +396,6 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
       fetchAdminData();
     }
   }, []);
-
-  // Auto-refresh admin orders every 15 seconds when authenticated
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    const interval = setInterval(() => {
-      fetchAdminData();
-    }, 15000);
-    return () => clearInterval(interval);
-  }, [isAuthenticated, token]);
 
   const updatePrice = async (productId: string, grams: number, newPrice: number) => {
     setProducts((prev) =>
