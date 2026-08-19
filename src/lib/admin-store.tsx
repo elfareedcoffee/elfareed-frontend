@@ -316,54 +316,51 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
     setOrders([]);
   };
 
-  const fetchAdminData = async (tokenOverride?: string) => {
+  const fetchPublicProducts = async () => {
     try {
-      const activeToken =
-        tokenOverride ||
-        token ||
-        (typeof window !== "undefined" ? localStorage.getItem("admin_token") : null);
-
-      if (activeToken) {
-        const headers = getAdminHeaders({}, activeToken);
-        const [productsRes, ordersRes] = await Promise.allSettled([
-          fetch(api("/api/v1/admin/products/"), { headers }),
-          fetch(api("/api/v1/admin/orders/?size=100"), { headers }),
-        ]);
-
-        if (productsRes.status === "fulfilled" && productsRes.value.ok) {
-          const data = await productsRes.value.json();
-          if (Array.isArray(data) && data.length > 0) {
-            setProducts(data.map(mapBackendProduct));
-          }
-        } else {
-          // Fall back to public products
-          const publicRes = await fetch(api("/api/v1/public/products/"));
-          if (publicRes.ok) {
-            const data = await publicRes.json();
-            if (Array.isArray(data) && data.length > 0) {
-              setProducts(data.map(mapBackendProduct));
-            }
-          }
-        }
-
-        if (ordersRes.status === "fulfilled" && ordersRes.value.ok) {
-          const ordersData = await ordersRes.value.json();
-          if (ordersData.items) {
-            setOrders(ordersData.items.map(mapBackendOrder));
-          }
-        }
-      } else {
-        // Public Storefront: Only fetch public products
-        const publicRes = await fetch(api("/api/v1/public/products/"));
-        if (publicRes.ok) {
-          const data = await publicRes.json();
-          if (Array.isArray(data) && data.length > 0) {
-            setProducts(data.map(mapBackendProduct));
-          }
+      const publicRes = await fetch(api("/api/v1/public/products/"));
+      if (publicRes.ok) {
+        const data = await publicRes.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setProducts(data.map(mapBackendProduct));
         }
       }
     } catch (e) {
-      console.error("Failed to fetch store data", e);
+      console.error("Failed to fetch public products", e);
+    }
+  };
+
+  const fetchAdminData = async (tokenOverride?: string) => {
+    const activeToken = tokenOverride || token;
+    if (!activeToken) {
+      await fetchPublicProducts();
+      return;
+    }
+
+    try {
+      const headers = getAdminHeaders({}, activeToken);
+      const [productsRes, ordersRes] = await Promise.allSettled([
+        fetch(api("/api/v1/admin/products/"), { headers }),
+        fetch(api("/api/v1/admin/orders/?size=100"), { headers }),
+      ]);
+
+      if (productsRes.status === "fulfilled" && productsRes.value.ok) {
+        const data = await productsRes.value.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setProducts(data.map(mapBackendProduct));
+        }
+      } else {
+        await fetchPublicProducts();
+      }
+
+      if (ordersRes.status === "fulfilled" && ordersRes.value.ok) {
+        const ordersData = await ordersRes.value.json();
+        if (ordersData.items) {
+          setOrders(ordersData.items.map(mapBackendOrder));
+        }
+      }
+    } catch (e) {
+      console.error("Failed to fetch admin data", e);
     }
   };
 
@@ -383,17 +380,18 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
               localStorage.removeItem("admin_token");
               localStorage.removeItem("admin_csrf");
             }
+            setToken(null);
             setIsAuthenticated(false);
-            fetchAdminData();
+            fetchPublicProducts();
           }
         })
         .catch(() => {
           setIsAuthenticated(false);
-          fetchAdminData();
+          fetchPublicProducts();
         });
     } else {
       setIsAuthenticated(false);
-      fetchAdminData();
+      fetchPublicProducts();
     }
   }, []);
 
