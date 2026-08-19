@@ -85,14 +85,15 @@ const INITIAL_SETTINGS: StoreSettings = {
   salesPhone: "01110583020",
   wholesalePhones: ["01020073246", "01005642565"],
 };
-/** 
- * Base API URL for network requests.
- * Defaults to empty string so all requests in production are same-origin (/api/v1/...) 
- * routed through Vercel's vercel.json rewrite to the Render backend.
- */
-export const API_BASE = "";
+// In production (Cloudflare Pages / Lovable), requests to /api/v1/... hit the frontend itself,
+// not the backend. vercel.json rewrites only work on Vercel, not Cloudflare Pages.
+// So we must use the full backend URL for all API calls in production.
+export const API_BASE =
+  typeof window !== "undefined" && window.location.hostname !== "localhost"
+    ? "https://elfareed-backend.onrender.com"
+    : "";
 
-/** Build a full API URL. Relative path "/api/v1/..." uses Vercel rewrite in production & Vite proxy in dev */
+/** Build a full API URL, prepending the backend origin in production */
 export function api(path: string): string {
   return `${API_BASE}${path}`;
 }
