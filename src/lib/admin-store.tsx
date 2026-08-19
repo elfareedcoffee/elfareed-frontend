@@ -366,6 +366,14 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
             ? ordersData
             : [];
           setOrders(rawItems.map(mapBackendOrder));
+        } else if (ordersRes.value.status === 401) {
+          console.warn("Stale token detected (401). Resetting admin session.");
+          if (typeof window !== "undefined") {
+            localStorage.removeItem("admin_token");
+            localStorage.removeItem("admin_csrf");
+          }
+          setToken(null);
+          setIsAuthenticated(false);
         } else {
           console.warn("Admin orders fetch failed:", ordersRes.value.status, ordersRes.value.statusText);
         }
