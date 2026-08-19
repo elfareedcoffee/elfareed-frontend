@@ -357,10 +357,17 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
         await fetchPublicProducts();
       }
 
-      if (ordersRes.status === "fulfilled" && ordersRes.value.ok) {
-        const ordersData = await ordersRes.value.json();
-        if (ordersData.items) {
-          setOrders(ordersData.items.map(mapBackendOrder));
+      if (ordersRes.status === "fulfilled") {
+        if (ordersRes.value.ok) {
+          const ordersData = await ordersRes.value.json();
+          const rawItems = Array.isArray(ordersData.items)
+            ? ordersData.items
+            : Array.isArray(ordersData)
+            ? ordersData
+            : [];
+          setOrders(rawItems.map(mapBackendOrder));
+        } else {
+          console.warn("Admin orders fetch failed:", ordersRes.value.status, ordersRes.value.statusText);
         }
       }
     } catch (e) {
