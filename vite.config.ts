@@ -16,7 +16,7 @@ export default defineConfig({
     server: {
       proxy: {
         "/api": {
-          target: process.env["BACKEND_URL"] || "https://elfareed-backend.vercel.app",
+          target: process.env["VITE_API_URL"] || "https://elfareed-backend.onrender.com",
           changeOrigin: true,
           secure: false,
         },
