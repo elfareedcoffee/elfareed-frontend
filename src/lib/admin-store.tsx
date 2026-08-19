@@ -242,12 +242,15 @@ function mapBackendProduct(p: any): AdminProduct {
     note,
     marker: marker,
     weights:
-      p.variants?.map((v: any) => ({
-        id: v.id,
-        label: v.weight_grams === 1000 ? "١ كيلو" : v.weight_grams === 500 ? "٥٠٠ جم" : "٢٥٠ جم",
-        grams: v.weight_grams,
-        price: Number(v.price),
-      })) || [],
+      (p.variants || [])
+        .slice()
+        .sort((a: any, b: any) => a.weight_grams - b.weight_grams)
+        .map((v: any) => ({
+          id: v.id,
+          label: v.weight_grams >= 1000 ? `${v.weight_grams / 1000} كيلو` : `${v.weight_grams} جم`,
+          grams: v.weight_grams,
+          price: Number(v.price),
+        })),
     image: p.image_url || undefined,
     available: p.is_active ?? true,
   };
