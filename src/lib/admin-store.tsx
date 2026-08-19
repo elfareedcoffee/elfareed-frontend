@@ -281,6 +281,35 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
     }
   }, [settings]);
 
+  /** Attempt to refresh the Supabase JWT using the stored refresh_token.
+   *  Returns the new access_token on success, or null on failure. */
+  const refreshAdminToken = async (): Promise<string | null> => {
+    const refreshToken = typeof window !== "undefined" ? localStorage.getItem("admin_refresh_token") : null;
+    if (!refreshToken) return null;
+    try {
+      const res = await fetch(api("/api/v1/admin/auth/refresh"), {
+        method: "POST",
+        headers: { Authorization: `Bearer ${refreshToken}` },
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      if (data?.access_token) {
+        localStorage.setItem("admin_token", data.access_token);
+        setToken(data.access_token);
+        if (data.refresh_token) {
+          localStorage.setItem("admin_refresh_token", data.refresh_token);
+        }
+        if (data.csrf_token) {
+          localStorage.setItem("admin_csrf", data.csrf_token);
+        }
+        return data.access_token;
+      }
+    } catch (e) {
+      console.error("Token refresh failed:", e);
+    }
+    return null;
+  };
+
   const login = async (username: string, password: string) => {
     const res = await fetch(api("/api/v1/admin/auth/login"), {
       method: "POST",
@@ -298,6 +327,10 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
       localStorage.setItem("admin_token", data.access_token);
       setToken(data.access_token);
     }
+    // Persist refresh token so we can auto-renew sessions
+    if (data?.refresh_token) {
+      localStorage.setItem("admin_refresh_token", data.refresh_token);
+    }
     if (data?.csrf_token) {
       localStorage.setItem("admin_csrf", data.csrf_token);
     }
@@ -309,6 +342,7 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     if (typeof window !== "undefined") {
       localStorage.removeItem("admin_token");
+      localStorage.removeItem("admin_refresh_token");
       localStorage.removeItem("admin_csrf");
     }
     setToken(null);
@@ -331,7 +365,7 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
   };
 
   const fetchAdminData = async (tokenOverride?: string) => {
-    const activeToken =
+    let activeToken =
       tokenOverride ||
       token ||
       (typeof window !== "undefined" ? localStorage.getItem("admin_token") : null);
@@ -341,12 +375,22 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    try {
-      const headers = getAdminHeaders({}, activeToken);
+    /** Inner helper: fetch admin endpoints and handle 401 with one auto-refresh attempt */
+    const doFetch = async (tok: string) => {
+      const headers = getAdminHeaders({}, tok);
       const [productsRes, ordersRes] = await Promise.allSettled([
         fetch(api("/api/v1/admin/products/"), { headers }),
         fetch(api("/api/v1/admin/orders/?size=100"), { headers }),
       ]);
+
+      // Check if either request returned 401 — token may be expired
+      const got401 =
+        (productsRes.status === "fulfilled" && productsRes.value.status === 401) ||
+        (ordersRes.status === "fulfilled" && ordersRes.value.status === 401);
+
+      if (got401) {
+        return null; // Signal caller to refresh and retry
+      }
 
       if (productsRes.status === "fulfilled" && productsRes.value.ok) {
         const data = await productsRes.value.json();
@@ -357,25 +401,50 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
         await fetchPublicProducts();
       }
 
-      if (ordersRes.status === "fulfilled") {
-        if (ordersRes.value.ok) {
-          const ordersData = await ordersRes.value.json();
-          const rawItems = Array.isArray(ordersData.items)
-            ? ordersData.items
-            : Array.isArray(ordersData)
-            ? ordersData
-            : [];
-          setOrders(rawItems.map(mapBackendOrder));
-        } else if (ordersRes.value.status === 401) {
-          console.warn("Stale token detected (401). Resetting admin session.");
+      if (ordersRes.status === "fulfilled" && ordersRes.value.ok) {
+        const ordersData = await ordersRes.value.json();
+        const rawItems = Array.isArray(ordersData.items)
+          ? ordersData.items
+          : Array.isArray(ordersData)
+          ? ordersData
+          : [];
+        setOrders(rawItems.map(mapBackendOrder));
+      }
+
+      return true; // Success
+    };
+
+    try {
+      const result = await doFetch(activeToken);
+
+      if (result === null) {
+        // 401 detected — try to refresh the token
+        console.info("Access token expired. Attempting silent refresh...");
+        const newToken = await refreshAdminToken();
+        if (newToken) {
+          activeToken = newToken;
+          const retryResult = await doFetch(newToken);
+          if (retryResult === null) {
+            // Still 401 after refresh — session is truly dead
+            console.warn("Session invalid after token refresh. Logging out.");
+            if (typeof window !== "undefined") {
+              localStorage.removeItem("admin_token");
+              localStorage.removeItem("admin_refresh_token");
+              localStorage.removeItem("admin_csrf");
+            }
+            setToken(null);
+            setIsAuthenticated(false);
+          }
+        } else {
+          // No refresh token available — log out
+          console.warn("No refresh token available. Logging out.");
           if (typeof window !== "undefined") {
             localStorage.removeItem("admin_token");
+            localStorage.removeItem("admin_refresh_token");
             localStorage.removeItem("admin_csrf");
           }
           setToken(null);
           setIsAuthenticated(false);
-        } else {
-          console.warn("Admin orders fetch failed:", ordersRes.value.status, ordersRes.value.statusText);
         }
       }
     } catch (e) {
@@ -389,14 +458,32 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
       fetch(api("/api/v1/admin/auth/me"), {
         headers: { Authorization: `Bearer ${savedToken}` },
       })
-        .then((res) => {
+        .then(async (res) => {
           if (res.ok) {
             setIsAuthenticated(true);
             setToken(savedToken);
             fetchAdminData(savedToken);
+          } else if (res.status === 401) {
+            // Token expired — attempt silent refresh before logging out
+            const newToken = await refreshAdminToken();
+            if (newToken) {
+              setIsAuthenticated(true);
+              setToken(newToken);
+              fetchAdminData(newToken);
+            } else {
+              if (typeof window !== "undefined") {
+                localStorage.removeItem("admin_token");
+                localStorage.removeItem("admin_refresh_token");
+                localStorage.removeItem("admin_csrf");
+              }
+              setToken(null);
+              setIsAuthenticated(false);
+              fetchPublicProducts();
+            }
           } else {
             if (typeof window !== "undefined") {
               localStorage.removeItem("admin_token");
+              localStorage.removeItem("admin_refresh_token");
               localStorage.removeItem("admin_csrf");
             }
             setToken(null);
