@@ -331,7 +331,11 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
   };
 
   const fetchAdminData = async (tokenOverride?: string) => {
-    const activeToken = tokenOverride || token;
+    const activeToken =
+      tokenOverride ||
+      token ||
+      (typeof window !== "undefined" ? localStorage.getItem("admin_token") : null);
+
     if (!activeToken) {
       await fetchPublicProducts();
       return;
