@@ -38,6 +38,7 @@ type StoreSettings = {
 
 type AdminStoreContextValue = {
   products: AdminProduct[];
+  isLoadingProducts: boolean;
   orders: Order[];
   settings: StoreSettings;
   isAuthenticated: boolean | null;
@@ -77,6 +78,7 @@ type AdminStoreContextValue = {
 
 const AdminStoreContext = createContext<AdminStoreContextValue | null>(null);
 
+const STORAGE_PRODUCTS_KEY = "fareed_cached_products_v1";
 const STORAGE_SETTINGS_KEY = "fareed-admin-settings-v1";
 
 const INITIAL_SETTINGS: StoreSettings = {
@@ -257,7 +259,38 @@ function mapBackendProduct(p: any): AdminProduct {
 }
 
 export function AdminStoreProvider({ children }: { children: ReactNode }) {
-  const [products, setProducts] = useState<AdminProduct[]>(INITIAL_PRODUCTS);
+  const [products, setProducts] = useState<AdminProduct[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem(STORAGE_PRODUCTS_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return parsed;
+          }
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+    return [];
+  });
+  const [isLoadingProducts, setIsLoadingProducts] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem(STORAGE_PRODUCTS_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return false;
+          }
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+    return true;
+  });
   const [orders, setOrders] = useState<Order[]>([]);
   const [token, setToken] = useState<string | null>(() => {
     if (typeof window !== "undefined") {
@@ -276,6 +309,16 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
     }
     return INITIAL_SETTINGS;
   });
+
+  useEffect(() => {
+    if (products.length > 0) {
+      try {
+        localStorage.setItem(STORAGE_PRODUCTS_KEY, JSON.stringify(products));
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [products]);
 
   useEffect(() => {
     try {
@@ -360,11 +403,19 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
       if (publicRes.ok) {
         const data = await publicRes.json();
         if (Array.isArray(data) && data.length > 0) {
-          setProducts(data.map(mapBackendProduct));
+          const mapped = data.map(mapBackendProduct);
+          setProducts(mapped);
+          try {
+            localStorage.setItem(STORAGE_PRODUCTS_KEY, JSON.stringify(mapped));
+          } catch {
+            /* ignore */
+          }
         }
       }
     } catch (e) {
       console.error("Failed to fetch public products", e);
+    } finally {
+      setIsLoadingProducts(false);
     }
   };
 
@@ -399,7 +450,13 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
       if (productsRes.status === "fulfilled" && productsRes.value.ok) {
         const data = await productsRes.value.json();
         if (Array.isArray(data) && data.length > 0) {
-          setProducts(data.map(mapBackendProduct));
+          const mapped = data.map(mapBackendProduct);
+          setProducts(mapped);
+          try {
+            localStorage.setItem(STORAGE_PRODUCTS_KEY, JSON.stringify(mapped));
+          } catch {
+            /* ignore */
+          }
         }
       } else {
         await fetchPublicProducts();
@@ -453,6 +510,8 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
       }
     } catch (e) {
       console.error("Failed to fetch admin data", e);
+    } finally {
+      setIsLoadingProducts(false);
     }
   };
 
@@ -882,6 +941,7 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
   const value = useMemo(
     () => ({
       products,
+      isLoadingProducts,
       orders,
       settings,
       isAuthenticated,
@@ -905,6 +965,7 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
     }),
     [
       products,
+      isLoadingProducts,
       orders,
       settings,
       isAuthenticated,

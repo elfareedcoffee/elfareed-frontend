@@ -30,7 +30,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  const { products } = useAdminStore();
+  const { products, isLoadingProducts } = useAdminStore();
   const activeProducts = products.filter((p) => p.available !== false);
   return (
     <div className="paper min-h-screen">
@@ -84,19 +84,30 @@ function Index() {
             </div>
 
             {/* roast tags — aligned straight on the exact same horizontal line */}
-            <ul className="mt-12 flex flex-wrap items-center gap-x-8 gap-y-3 text-sm">
-              {activeProducts.map((p) => (
-                <li
-                  key={p.id}
-                  className="flex items-center gap-2 font-medium transition-transform duration-200 hover:scale-105"
-                >
-                  <span
-                    className="h-2.5 w-2.5 rounded-full animate-pulse-subtle"
-                    style={{ backgroundColor: p.marker }}
-                  />
-                  {p.name}
-                </li>
-              ))}
+            <ul className="mt-12 flex flex-wrap items-center gap-x-8 gap-y-3 text-sm min-h-[28px]">
+              {isLoadingProducts && activeProducts.length === 0 ? (
+                <>
+                  {[1, 2, 3, 4].map((n) => (
+                    <li key={n} className="flex items-center gap-2 animate-pulse">
+                      <span className="h-2.5 w-2.5 rounded-full bg-ink/20" />
+                      <span className="h-3 w-12 rounded bg-ink/15" />
+                    </li>
+                  ))}
+                </>
+              ) : (
+                activeProducts.map((p) => (
+                  <li
+                    key={p.id}
+                    className="flex items-center gap-2 font-medium transition-transform duration-200 hover:scale-105"
+                  >
+                    <span
+                      className="h-2.5 w-2.5 rounded-full animate-pulse-subtle"
+                      style={{ backgroundColor: p.marker }}
+                    />
+                    {p.name}
+                  </li>
+                ))
+              )}
             </ul>
           </div>
 
@@ -139,11 +150,33 @@ function Index() {
         </ScrollReveal>
 
         <div className="mt-12 grid gap-7 items-stretch sm:grid-cols-2 lg:grid-cols-4">
-          {activeProducts.map((p, i) => (
-            <ScrollReveal key={p.id} delay={i * 120}>
-              <ProductCard product={p} index={i} />
-            </ScrollReveal>
-          ))}
+          {isLoadingProducts && activeProducts.length === 0 ? (
+            <>
+              {[1, 2, 3, 4].map((n) => (
+                <div
+                  key={n}
+                  className="flex h-[420px] flex-col border border-ink/30 bg-cream p-6 animate-pulse"
+                >
+                  <div className="h-4 w-1/3 bg-ink/15 rounded mb-4" />
+                  <div className="h-8 w-2/3 bg-ink/20 rounded mb-2" />
+                  <div className="h-3 w-1/2 bg-ink/10 rounded mb-6" />
+                  <div className="h-16 w-full bg-ink/10 rounded mb-auto" />
+                  <div className="h-8 w-full bg-ink/15 rounded mt-4" />
+                  <div className="h-10 w-full bg-ink/20 rounded mt-3" />
+                </div>
+              ))}
+            </>
+          ) : activeProducts.length > 0 ? (
+            activeProducts.map((p, i) => (
+              <ScrollReveal key={p.id} delay={i * 120}>
+                <ProductCard product={p} index={i} />
+              </ScrollReveal>
+            ))
+          ) : (
+            <div className="col-span-full py-16 text-center text-muted-foreground">
+              لا توجد تحميصات متاحة حالياً.
+            </div>
+          )}
         </div>
 
         <ScrollReveal className="mt-10 sm:mt-12 text-center">
