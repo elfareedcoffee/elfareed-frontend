@@ -501,6 +501,17 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Auto-refresh admin data every 30 seconds when authenticated
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const interval = setInterval(() => {
+      const tok = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
+      if (tok) fetchAdminData(tok);
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated]);
+
+
   const updatePrice = async (productId: string, grams: number, newPrice: number) => {
     setProducts((prev) =>
       prev.map((p) => {
@@ -888,7 +899,29 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
       resetToDefaults,
       analytics,
     }),
-    [products, orders, settings, isAuthenticated, token, analytics],
+    [
+      products,
+      orders,
+      settings,
+      isAuthenticated,
+      token,
+      analytics,
+      login,
+      logout,
+      fetchAdminData,
+      updatePrice,
+      updateProductImage,
+      removeProductImage,
+      updateProduct,
+      addProduct,
+      deleteProduct,
+      toggleProductAvailability,
+      createOrder,
+      updateOrderStatus,
+      deleteOrder,
+      updateSettings,
+      resetToDefaults,
+    ],
   );
 
   return <AdminStoreContext.Provider value={value}>{children}</AdminStoreContext.Provider>;
