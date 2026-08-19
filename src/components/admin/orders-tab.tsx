@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Search,
   Filter,
@@ -26,6 +26,10 @@ export function OrdersTab() {
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  useEffect(() => {
+    fetchAdminData();
+  }, []);
+
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
@@ -40,11 +44,17 @@ export function OrdersTab() {
 
   const filteredOrders = useMemo(() => {
     return orders.filter((o) => {
+      const orderNum = (o.orderNumber || "").toLowerCase();
+      const customerName = (o.customer?.name || "").toLowerCase();
+      const customerPhone = o.customer?.phone || "";
+      const customerArea = (o.customer?.area || "").toLowerCase();
+      const query = searchQuery.toLowerCase();
+
       const matchesSearch =
-        o.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        o.customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        o.customer.phone.includes(searchQuery) ||
-        o.customer.area.toLowerCase().includes(searchQuery.toLowerCase());
+        orderNum.includes(query) ||
+        customerName.includes(query) ||
+        customerPhone.includes(searchQuery) ||
+        customerArea.includes(query);
 
       const matchesStatus = selectedStatus === "الكل" || o.status === selectedStatus;
 
