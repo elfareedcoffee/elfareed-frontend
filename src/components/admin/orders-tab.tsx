@@ -24,6 +24,7 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { useAdminStore, type Order, type OrderStatus } from "@/lib/admin-store";
+import { formatWhatsAppPhone } from "@/lib/utils";
 import { toast } from "sonner";
 
 const STATUS_OPTIONS: OrderStatus[] = ["جديد", "قيد التجهيز", "تم التوصيل", "ملغي"];
@@ -275,7 +276,7 @@ ${itemsList}
               {/* Quick Actions Card */}
               <div className="grid grid-cols-2 gap-2 pt-1">
                 <a
-                  href={`https://wa.me/2${activeOrder.customer.phone.replace(/\D/g, "")}?text=${encodeURIComponent(
+                  href={`https://wa.me/${formatWhatsAppPhone(activeOrder.customer.phone)}?text=${encodeURIComponent(
                     `أهلاً بك أستاذ ${activeOrder.customer.name}، بخصوص طلبك من محمصة بن فريد رقم (${activeOrder.orderNumber})...`,
                   )}`}
                   target="_blank"
@@ -595,7 +596,7 @@ ${itemsList}
 
                     <div className="flex gap-2">
                       <a
-                        href={`https://wa.me/2${order.customer.phone.replace(/\D/g, "")}?text=${encodeURIComponent(
+                        href={`https://wa.me/${formatWhatsAppPhone(order.customer.phone)}?text=${encodeURIComponent(
                           `أهلاً بك أستاذ ${order.customer.name}، بخصوص طلبك من محمصة بن فريد رقم (${order.orderNumber})...`,
                         )}`}
                         target="_blank"
@@ -820,7 +821,7 @@ ${itemsList}
                                 {/* Quick WhatsApp & Call buttons */}
                                 <div className="flex gap-2 pt-1">
                                   <a
-                                    href={`https://wa.me/2${order.customer.phone.replace(/\D/g, "")}?text=${encodeURIComponent(
+                                    href={`https://wa.me/${formatWhatsAppPhone(order.customer.phone)}?text=${encodeURIComponent(
                                       `أهلاً بك أستاذ ${order.customer.name}، بخصوص طلبك من محمصة بن فريد رقم (${order.orderNumber})...`,
                                     )}`}
                                     target="_blank"

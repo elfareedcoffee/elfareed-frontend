@@ -5,6 +5,7 @@ import { ProductCard } from "@/components/product-card";
 import { ScrollReveal } from "@/components/scroll-reveal";
 import { useAdminStore } from "@/lib/admin-store";
 import { CONTACT } from "@/data/products";
+import { formatWhatsAppPhone } from "@/lib/utils";
 import heroBeans from "@/assets/hero-beans.jpg";
 import storyPour from "@/assets/story-pour.jpg";
 import wholesaleSacks from "@/assets/wholesale-sacks.jpg";
@@ -396,7 +397,7 @@ function Index() {
             <a href="https://www.instagram.com/fareedcoffee" target="_blank" rel="noreferrer">
               إنستجرام
             </a>
-            <a href={`https://wa.me/2${CONTACT.sales}`} target="_blank" rel="noreferrer">
+            <a href={`https://wa.me/${formatWhatsAppPhone(CONTACT.sales)}`} target="_blank" rel="noreferrer">
               واتساب
             </a>
           </div>
