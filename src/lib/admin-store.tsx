@@ -383,6 +383,37 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
     return null;
   };
 
+  const fetchWithAdminAuth = async (
+    url: string,
+    options: RequestInit = {},
+  ): Promise<Response> => {
+    let activeTok =
+      token || (typeof window !== "undefined" ? localStorage.getItem("admin_token") : null);
+    let res = await fetch(url, {
+      ...options,
+      headers: getAdminHeaders(
+        (options.headers as Record<string, string>) || {},
+        activeTok || undefined,
+      ),
+    });
+
+    if (res.status === 401) {
+      console.info("401 encountered, refreshing admin token...");
+      const newToken = await refreshAdminToken();
+      if (newToken) {
+        res = await fetch(url, {
+          ...options,
+          headers: getAdminHeaders(
+            (options.headers as Record<string, string>) || {},
+            newToken,
+          ),
+        });
+      }
+    }
+
+    return res;
+  };
+
   const login = async (username: string, password: string) => {
     const res = await fetch(api("/api/v1/admin/auth/login"), {
       method: "POST",
@@ -495,7 +526,13 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
           : Array.isArray(ordersData)
           ? ordersData
           : [];
-        setOrders(rawItems.map(mapBackendOrder));
+        const mappedOrders = rawItems.map(mapBackendOrder);
+        setOrders(mappedOrders);
+        try {
+          localStorage.setItem(STORAGE_ORDERS_KEY, JSON.stringify(mappedOrders));
+        } catch {
+          /* ignore */
+        }
       }
 
       return true; // Success
@@ -882,9 +919,9 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
 
     // Fire API in background, rollback on failure
     try {
-      const res = await fetch(api(`/api/v1/admin/orders/${orderId}/status`), {
+      const res = await fetchWithAdminAuth(api(`/api/v1/admin/orders/${orderId}/status`), {
         method: "PUT",
-        headers: getAdminHeaders({ "Content-Type": "application/json" }),
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: backendStatus }),
       });
       if (!res.ok) {
@@ -920,15 +957,13 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const res = await fetch(api(`/api/v1/admin/orders/${orderId}`), {
+      const res = await fetchWithAdminAuth(api(`/api/v1/admin/orders/${orderId}`), {
         method: "DELETE",
-        headers: getAdminHeaders(),
       });
       if (!res.ok) {
         // Fallback to cancel if DELETE not yet propagated on older server deployment
-        const cancelRes = await fetch(api(`/api/v1/admin/orders/${orderId}/cancel`), {
+        const cancelRes = await fetchWithAdminAuth(api(`/api/v1/admin/orders/${orderId}/cancel`), {
           method: "POST",
-          headers: getAdminHeaders(),
         });
         if (!cancelRes.ok) {
           console.error("Delete & Cancel failed, rolling back");
