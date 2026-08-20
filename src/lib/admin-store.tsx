@@ -870,9 +870,15 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
   const updateOrderStatus = async (orderId: string, status: OrderStatus) => {
     const backendStatus = mapOrderStatusToBackend(status);
 
-    // Optimistic update — change UI instantly
+    // Optimistic update — change UI and localStorage cache instantly
     const previousOrders = orders;
-    setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status } : o)));
+    const updatedOrders = orders.map((o) => (o.id === orderId ? { ...o, status } : o));
+    setOrders(updatedOrders);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(STORAGE_ORDERS_KEY, JSON.stringify(updatedOrders));
+      } catch {}
+    }
 
     // Fire API in background, rollback on failure
     try {
@@ -882,12 +888,23 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ status: backendStatus }),
       });
       if (!res.ok) {
-        console.error("Status update failed, rolling back");
+        const errData = await res.json().catch(() => ({}));
+        console.error("Status update failed:", errData);
         setOrders(previousOrders);
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.setItem(STORAGE_ORDERS_KEY, JSON.stringify(previousOrders));
+          } catch {}
+        }
       }
     } catch (e) {
       console.error("Status update failed, rolling back", e);
       setOrders(previousOrders);
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem(STORAGE_ORDERS_KEY, JSON.stringify(previousOrders));
+        } catch {}
+      }
     }
   };
 
