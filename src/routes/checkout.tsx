@@ -167,51 +167,70 @@ function Checkout() {
                   notes: ((formData.get("notes") as string) || "").trim(),
                 };
 
-                // 1. Add each item to the backend cart, tracking cart_id
-                let lastCartId: string | null = null;
-                for (const item of items) {
-                  let variantId = item.variantId;
-                  if (!variantId) {
-                    const prod = products.find(
-                      (p) => p.id === item.productId || p.name === item.name,
-                    );
-                    const weightObj = prod?.weights.find((w) => w.grams === item.grams);
-                    variantId = weightObj?.id;
-                  }
-
-                  if (!variantId) {
-                    console.warn("Skipping item without variantId:", item);
-                    continue;
-                  }
-
-                  const cartHeaders: Record<string, string> = {
-                    "Content-Type": "application/json",
-                  };
-                  if (lastCartId) cartHeaders["x-cart-id"] = lastCartId;
-
-                  const cartRes = await fetch(api("/api/v1/public/cart/items"), {
-                    method: "POST",
-                    headers: cartHeaders,
-                    body: JSON.stringify({
-                      product_variant_id: variantId,
-                      quantity: item.qty,
-                    }),
-                  });
-
-                  if (cartRes.ok) {
-                    const cartData = await cartRes.json();
-                    if (cartData?.id) {
-                      lastCartId = cartData.id;
+                // Resolve variant IDs for all items upfront
+                const resolvedItems = items
+                  .map((item) => {
+                    let variantId = item.variantId;
+                    if (!variantId) {
+                      const prod = products.find(
+                        (p) => p.id === item.productId || p.name === item.name,
+                      );
+                      const weightObj = prod?.weights.find((w) => w.grams === item.grams);
+                      variantId = weightObj?.id;
                     }
-                  } else {
-                    const errData = await cartRes.json().catch(() => ({}));
-                    console.error("Failed to add cart item:", errData);
-                  }
+                    return { ...item, resolvedVariantId: variantId };
+                  })
+                  .filter((item) => item.resolvedVariantId);
+
+                if (resolvedItems.length === 0) {
+                  toast.error("لم يتم العثور على المنتجات في السلة");
+                  setIsSubmitting(false);
+                  return;
                 }
 
-                // 2. Submit order with tracked cart_id
+                // 1. Create cart with first item (must be serial to get cart_id)
+                const firstItem = resolvedItems[0];
+                const firstCartRes = await fetch(api("/api/v1/public/cart/items"), {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    product_variant_id: firstItem.resolvedVariantId,
+                    quantity: firstItem.qty,
+                  }),
+                });
+
+                if (!firstCartRes.ok) {
+                  const errData = await firstCartRes.json().catch(() => ({}));
+                  toast.error(parseApiErrorMessage(errData));
+                  setIsSubmitting(false);
+                  return;
+                }
+
+                const firstCartData = await firstCartRes.json();
+                const cartId = firstCartData?.id;
+
+                // 2. Add remaining items IN PARALLEL (all at once, not one-by-one)
+                if (resolvedItems.length > 1 && cartId) {
+                  await Promise.all(
+                    resolvedItems.slice(1).map((item) =>
+                      fetch(api("/api/v1/public/cart/items"), {
+                        method: "POST",
+                        headers: {
+                          "Content-Type": "application/json",
+                          "x-cart-id": cartId,
+                        },
+                        body: JSON.stringify({
+                          product_variant_id: item.resolvedVariantId,
+                          quantity: item.qty,
+                        }),
+                      }),
+                    ),
+                  );
+                }
+
+                // 3. Submit order with cart_id
                 const orderHeaders: Record<string, string> = { "Content-Type": "application/json" };
-                if (lastCartId) orderHeaders["x-cart-id"] = lastCartId;
+                if (cartId) orderHeaders["x-cart-id"] = cartId;
 
                 const res = await fetch(api("/api/v1/public/orders/"), {
                   method: "POST",
