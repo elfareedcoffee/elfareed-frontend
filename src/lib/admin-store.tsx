@@ -892,22 +892,45 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
   };
 
   const deleteOrder = async (orderId: string) => {
-    // Optimistic update — mark as cancelled instantly
+    // Optimistic update — remove order from state and local storage cache immediately
     const previousOrders = orders;
-    setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: "ملغي" as OrderStatus } : o)));
+    const updatedOrders = orders.filter((o) => o.id !== orderId);
+    setOrders(updatedOrders);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(STORAGE_ORDERS_KEY, JSON.stringify(updatedOrders));
+      } catch {}
+    }
 
     try {
-      const res = await fetch(api(`/api/v1/admin/orders/${orderId}/cancel`), {
-        method: "POST",
+      const res = await fetch(api(`/api/v1/admin/orders/${orderId}`), {
+        method: "DELETE",
         headers: getAdminHeaders(),
       });
       if (!res.ok) {
-        console.error("Cancel failed, rolling back");
-        setOrders(previousOrders);
+        // Fallback to cancel if DELETE not yet propagated on older server deployment
+        const cancelRes = await fetch(api(`/api/v1/admin/orders/${orderId}/cancel`), {
+          method: "POST",
+          headers: getAdminHeaders(),
+        });
+        if (!cancelRes.ok) {
+          console.error("Delete & Cancel failed, rolling back");
+          setOrders(previousOrders);
+          if (typeof window !== "undefined") {
+            try {
+              localStorage.setItem(STORAGE_ORDERS_KEY, JSON.stringify(previousOrders));
+            } catch {}
+          }
+        }
       }
     } catch (e) {
-      console.error("Cancel failed, rolling back", e);
+      console.error("Delete order failed, rolling back", e);
       setOrders(previousOrders);
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem(STORAGE_ORDERS_KEY, JSON.stringify(previousOrders));
+        } catch {}
+      }
     }
   };
 
