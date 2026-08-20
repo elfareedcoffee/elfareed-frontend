@@ -79,6 +79,7 @@ type AdminStoreContextValue = {
 const AdminStoreContext = createContext<AdminStoreContextValue | null>(null);
 
 const STORAGE_PRODUCTS_KEY = "fareed_cached_products_v1";
+const STORAGE_ORDERS_KEY = "fareed_cached_orders_v1";
 const STORAGE_SETTINGS_KEY = "fareed-admin-settings-v1";
 
 const INITIAL_SETTINGS: StoreSettings = {
@@ -291,7 +292,22 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
     }
     return true;
   });
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<Order[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem(STORAGE_ORDERS_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return parsed;
+          }
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+    return [];
+  });
   const [token, setToken] = useState<string | null>(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("admin_token");
@@ -319,6 +335,16 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
       }
     }
   }, [products]);
+
+  useEffect(() => {
+    if (orders.length > 0) {
+      try {
+        localStorage.setItem(STORAGE_ORDERS_KEY, JSON.stringify(orders));
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [orders]);
 
   useEffect(() => {
     try {
@@ -518,20 +544,27 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const savedToken = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null;
     if (savedToken) {
-      fetch(api("/api/v1/admin/auth/me"), {
+      // Optimistic: show cached data immediately, validate token in parallel
+      setToken(savedToken);
+      setIsAuthenticated(true);
+
+      // Fire auth check and data fetch in parallel
+      const authCheck = fetch(api("/api/v1/admin/auth/me"), {
         headers: { Authorization: `Bearer ${savedToken}` },
-      })
+      });
+      const dataFetch = fetchAdminData(savedToken);
+
+      authCheck
         .then(async (res) => {
           if (res.ok) {
-            setIsAuthenticated(true);
-            setToken(savedToken);
-            fetchAdminData(savedToken);
-          } else if (res.status === 401) {
-            // Token expired — attempt silent refresh before logging out
+            // Token valid, data is already loading/loaded
+            return;
+          }
+          if (res.status === 401) {
             const newToken = await refreshAdminToken();
             if (newToken) {
-              setIsAuthenticated(true);
               setToken(newToken);
+              setIsAuthenticated(true);
               fetchAdminData(newToken);
             } else {
               if (typeof window !== "undefined") {
@@ -836,27 +869,45 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
 
   const updateOrderStatus = async (orderId: string, status: OrderStatus) => {
     const backendStatus = mapOrderStatusToBackend(status);
+
+    // Optimistic update — change UI instantly
+    const previousOrders = orders;
+    setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status } : o)));
+
+    // Fire API in background, rollback on failure
     try {
-      await fetch(api(`/api/v1/admin/orders/${orderId}/status`), {
+      const res = await fetch(api(`/api/v1/admin/orders/${orderId}/status`), {
         method: "PUT",
         headers: getAdminHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ status: backendStatus }),
       });
-      setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status } : o)));
+      if (!res.ok) {
+        console.error("Status update failed, rolling back");
+        setOrders(previousOrders);
+      }
     } catch (e) {
-      console.error(e);
+      console.error("Status update failed, rolling back", e);
+      setOrders(previousOrders);
     }
   };
 
   const deleteOrder = async (orderId: string) => {
+    // Optimistic update — mark as cancelled instantly
+    const previousOrders = orders;
+    setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: "ملغي" as OrderStatus } : o)));
+
     try {
-      await fetch(api(`/api/v1/admin/orders/${orderId}/cancel`), {
+      const res = await fetch(api(`/api/v1/admin/orders/${orderId}/cancel`), {
         method: "POST",
         headers: getAdminHeaders(),
       });
-      setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: "ملغي" } : o)));
+      if (!res.ok) {
+        console.error("Cancel failed, rolling back");
+        setOrders(previousOrders);
+      }
     } catch (e) {
-      console.error(e);
+      console.error("Cancel failed, rolling back", e);
+      setOrders(previousOrders);
     }
   };
 
