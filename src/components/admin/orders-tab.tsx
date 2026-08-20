@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, Fragment } from "react";
 import { createPortal } from "react-dom";
 import {
   Search,
@@ -20,6 +20,8 @@ import {
   Truck,
   User,
   Coffee,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { useAdminStore, type Order, type OrderStatus } from "@/lib/admin-store";
 import { toast } from "sonner";
@@ -31,6 +33,7 @@ export function OrdersTab() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string>("الكل");
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -48,6 +51,10 @@ export function OrdersTab() {
     } finally {
       setIsRefreshing(false);
     }
+  };
+
+  const toggleExpandOrder = (orderId: string) => {
+    setExpandedOrderId((prev) => (prev === orderId ? null : orderId));
   };
 
   const copyCourierDetails = (order: Order) => {
@@ -112,7 +119,7 @@ ${itemsList}
     }
   };
 
-  // Lock body scroll when modal is active so viewport never shifts
+  // Lock body scroll when modal is active
   useEffect(() => {
     if (!activeOrder || typeof document === "undefined") return;
     const prevOverflow = document.body.style.overflow;
@@ -122,15 +129,34 @@ ${itemsList}
     };
   }, [activeOrder]);
 
+  // Modal element mounted via Portal with explicit Top-Anchored viewport style
   const modalElement =
     activeOrder && typeof document !== "undefined" ? (
       <div
-        className="fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-4 bg-black/65"
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          width: "100vw",
+          height: "100vh",
+          zIndex: 999999,
+          backgroundColor: "rgba(0, 0, 0, 0.7)",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "flex-start",
+          paddingTop: "24px",
+          paddingBottom: "24px",
+          paddingLeft: "16px",
+          paddingRight: "16px",
+          overflowY: "auto",
+        }}
         onClick={(e) => {
           if (e.target === e.currentTarget) setActiveOrder(null);
         }}
       >
-        <div className="relative w-full max-w-4xl rounded-xl border border-ink/30 bg-background p-4 sm:p-5 shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+        <div className="relative w-full max-w-4xl rounded-xl border border-ink/30 bg-background p-4 sm:p-5 shadow-2xl overflow-hidden flex flex-col my-auto sm:my-0">
           {/* Modal Header */}
           <div className="flex items-center justify-between border-b border-ink/15 pb-3 shrink-0">
             <div className="flex items-center gap-3">
@@ -185,8 +211,8 @@ ${itemsList}
             </div>
           </div>
 
-          {/* Compact 2-Column Content (Fits entirely on screen without scrolling) */}
-          <div className="grid gap-3.5 md:grid-cols-2 pt-3 overflow-y-auto pr-1">
+          {/* Compact 2-Column Content */}
+          <div className="grid gap-3.5 md:grid-cols-2 pt-3">
             {/* Left Column: Customer Details, Notes, & Quick Contacts */}
             <div className="space-y-3 flex flex-col justify-between">
               {/* Customer Info Card */}
@@ -375,7 +401,7 @@ ${itemsList}
     ) : null;
 
   return (
-    <div className="space-y-6 animate-fade-in-up">
+    <div className="space-y-6">
       {/* Controls: Search & Filters */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border border-ink/20 bg-cream/90 p-4 rounded-lg shadow-xs">
         {/* Search */}
@@ -428,127 +454,170 @@ ${itemsList}
             لا توجد طلبات مطابقة للبحث أو الفلتر المختار.
           </div>
         ) : (
-          filteredOrders.map((order) => (
-            <div
-              key={order.id}
-              className="border border-ink/20 bg-cream p-4 rounded-lg shadow-xs space-y-3 transition-colors"
-            >
-              {/* Card Header: Order #, Status, Date */}
-              <div className="flex items-center justify-between border-b border-ink/10 pb-2.5">
-                <div>
-                  <span className="font-mono font-bold text-sm text-foreground">
-                    #{order.orderNumber}
-                  </span>
-                  <p className="text-[11px] text-muted-foreground">
-                    {new Date(order.createdAt).toLocaleDateString("ar-EG", {
-                      month: "short",
-                      day: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </p>
-                </div>
+          filteredOrders.map((order) => {
+            const isExpanded = expandedOrderId === order.id;
+            return (
+              <div
+                key={order.id}
+                className="border border-ink/20 bg-cream p-4 rounded-lg shadow-xs space-y-3 transition-colors"
+              >
+                {/* Card Header: Order #, Status, Date */}
+                <div className="flex items-center justify-between border-b border-ink/10 pb-2.5">
+                  <div>
+                    <span className="font-mono font-bold text-sm text-foreground">
+                      #{order.orderNumber}
+                    </span>
+                    <p className="text-[11px] text-muted-foreground">
+                      {new Date(order.createdAt).toLocaleDateString("ar-EG", {
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  </div>
 
-                <select
-                  value={order.status}
-                  onChange={(e) => {
-                    const newStatus = e.target.value as OrderStatus;
-                    updateOrderStatus(order.id, newStatus);
-                    toast.success(`تم تغيير حالة الطلب ${order.orderNumber} إلى ${newStatus}`);
-                  }}
-                  className={`rounded border px-2.5 py-1 text-xs font-bold outline-none cursor-pointer ${getStatusBadge(
-                    order.status,
-                  )}`}
-                >
-                  {STATUS_OPTIONS.map((opt) => (
-                    <option key={opt} value={opt}>
-                      {opt}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Customer & Area */}
-              <div className="flex items-start justify-between text-xs">
-                <div>
-                  <p className="font-bold text-foreground">{order.customer.name}</p>
-                  <p className="text-muted-foreground flex items-center gap-1 mt-0.5">
-                    <MapPin className="h-3 w-3 text-brass shrink-0" />
-                    {order.customer.area}
-                  </p>
-                </div>
-                <a
-                  href={`tel:${order.customer.phone}`}
-                  dir="ltr"
-                  className="font-mono text-xs font-bold text-brass bg-background px-2.5 py-1 rounded border border-ink/20 flex items-center gap-1 hover:bg-brass hover:text-ink transition-colors"
-                >
-                  <Phone className="h-3 w-3" />
-                  {order.customer.phone}
-                </a>
-              </div>
-
-              {/* Customer Notes in Mobile Card (if added) */}
-              {order.customer.notes && (
-                <div className="bg-amber-500/10 border border-amber-500/30 p-2.5 rounded text-xs text-amber-950">
-                  <span className="font-bold flex items-center gap-1 text-amber-900 mb-0.5">
-                    <MessageSquare className="h-3.5 w-3.5 text-amber-700 shrink-0" />
-                    ملاحظات العميل:
-                  </span>
-                  <p className="font-medium">{order.customer.notes}</p>
-                </div>
-              )}
-
-              {/* Items summary */}
-              <div className="bg-background/90 p-2.5 rounded border border-ink/10 text-xs">
-                <p className="text-muted-foreground font-medium leading-relaxed">
-                  {order.items.map((i) => `${i.name} (${i.weight} × ${i.qty})`).join(" + ")}
-                </p>
-              </div>
-
-              {/* Card Footer: Total & Actions */}
-              <div className="flex items-center justify-between border-t border-ink/10 pt-2.5">
-                <div className="text-xs">
-                  <span className="text-muted-foreground">الإجمالي: </span>
-                  <span className="font-bold font-mono text-sm text-foreground">
-                    {order.total} ج.م
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => copyCourierDetails(order)}
-                    className="p-1.5 border border-ink/25 bg-background hover:bg-kraft rounded text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                    title="نسخ للدليفري"
-                  >
-                    {copiedId === order.id ? (
-                      <Check className="h-3.5 w-3.5 text-emerald-600" />
-                    ) : (
-                      <Copy className="h-3.5 w-3.5" />
-                    )}
-                  </button>
-                  <button
-                    onClick={() => setActiveOrder(order)}
-                    className="inline-flex items-center gap-1 border border-ink bg-ink px-3 py-1.5 text-xs font-bold text-cream hover:bg-brass hover:text-ink rounded transition-colors cursor-pointer shadow-xs"
-                  >
-                    <Eye className="h-3.5 w-3.5" />
-                    التفاصيل
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (confirm(`هل أنت متأكد من حذف الطلب ${order.orderNumber}؟`)) {
-                        deleteOrder(order.id);
-                        toast.info(`تم حذف الطلب ${order.orderNumber}`);
-                      }
+                  <select
+                    value={order.status}
+                    onChange={(e) => {
+                      const newStatus = e.target.value as OrderStatus;
+                      updateOrderStatus(order.id, newStatus);
+                      toast.success(`تم تغيير حالة الطلب ${order.orderNumber} إلى ${newStatus}`);
                     }}
-                    className="p-1.5 border border-red-300 text-red-600 hover:bg-red-600 hover:text-white transition-colors cursor-pointer rounded"
-                    title="حذف الطلب"
+                    className={`rounded border px-2.5 py-1 text-xs font-bold outline-none cursor-pointer ${getStatusBadge(
+                      order.status,
+                    )}`}
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
+                    {STATUS_OPTIONS.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
+                    ))}
+                  </select>
                 </div>
+
+                {/* Customer & Area */}
+                <div className="flex items-start justify-between text-xs">
+                  <div>
+                    <p className="font-bold text-foreground">{order.customer.name}</p>
+                    <p className="text-muted-foreground flex items-center gap-1 mt-0.5">
+                      <MapPin className="h-3 w-3 text-brass shrink-0" />
+                      {order.customer.area}
+                    </p>
+                  </div>
+                  <a
+                    href={`tel:${order.customer.phone}`}
+                    dir="ltr"
+                    className="font-mono text-xs font-bold text-brass bg-background px-2.5 py-1 rounded border border-ink/20 flex items-center gap-1 hover:bg-brass hover:text-ink transition-colors"
+                  >
+                    <Phone className="h-3 w-3" />
+                    {order.customer.phone}
+                  </a>
+                </div>
+
+                {/* Customer Notes in Mobile Card (if added) */}
+                {order.customer.notes && (
+                  <div className="bg-amber-500/10 border border-amber-500/30 p-2.5 rounded text-xs text-amber-950">
+                    <span className="font-bold flex items-center gap-1 text-amber-900 mb-0.5">
+                      <MessageSquare className="h-3.5 w-3.5 text-amber-700 shrink-0" />
+                      ملاحظات العميل:
+                    </span>
+                    <p className="font-medium">{order.customer.notes}</p>
+                  </div>
+                )}
+
+                {/* Items summary */}
+                <div className="bg-background/90 p-2.5 rounded border border-ink/10 text-xs">
+                  <p className="text-muted-foreground font-medium leading-relaxed">
+                    {order.items.map((i) => `${i.name} (${i.weight} × ${i.qty})`).join(" + ")}
+                  </p>
+                </div>
+
+                {/* Card Footer: Total & Actions */}
+                <div className="flex items-center justify-between border-t border-ink/10 pt-2.5">
+                  <div className="text-xs">
+                    <span className="text-muted-foreground">الإجمالي: </span>
+                    <span className="font-bold font-mono text-sm text-foreground">
+                      {order.total} ج.م
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => copyCourierDetails(order)}
+                      className="p-1.5 border border-ink/25 bg-background hover:bg-kraft rounded text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                      title="نسخ للدليفري"
+                    >
+                      {copiedId === order.id ? (
+                        <Check className="h-3.5 w-3.5 text-emerald-600" />
+                      ) : (
+                        <Copy className="h-3.5 w-3.5" />
+                      )}
+                    </button>
+                    <button
+                      onClick={() => toggleExpandOrder(order.id)}
+                      className="inline-flex items-center gap-1 border border-ink bg-ink px-3 py-1.5 text-xs font-bold text-cream hover:bg-brass hover:text-ink rounded transition-colors cursor-pointer shadow-xs"
+                    >
+                      {isExpanded ? (
+                        <>
+                          <ChevronUp className="h-3.5 w-3.5" />
+                          إخفاء
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown className="h-3.5 w-3.5" />
+                          التفاصيل
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (confirm(`هل أنت متأكد من حذف الطلب ${order.orderNumber}؟`)) {
+                          deleteOrder(order.id);
+                          toast.info(`تم حذف الطلب ${order.orderNumber}`);
+                        }
+                      }}
+                      className="p-1.5 border border-red-300 text-red-600 hover:bg-red-600 hover:text-white transition-colors cursor-pointer rounded"
+                      title="حذف الطلب"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Inline Expanded Mobile View */}
+                {isExpanded && (
+                  <div className="mt-3 border-t border-ink/15 pt-3 space-y-3 bg-background/80 p-3 rounded">
+                    <div>
+                      <span className="text-xs font-bold block mb-1">العنوان بالتفصيل:</span>
+                      <p className="text-xs text-muted-foreground">{order.customer.address}</p>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <a
+                        href={`https://wa.me/2${order.customer.phone.replace(/\D/g, "")}?text=${encodeURIComponent(
+                          `أهلاً بك أستاذ ${order.customer.name}، بخصوص طلبك من محمصة بن فريد رقم (${order.orderNumber})...`,
+                        )}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex-1 flex items-center justify-center gap-1 py-1.5 text-xs font-bold bg-emerald-600 text-white rounded"
+                      >
+                        <MessageSquare className="h-3 w-3" />
+                        واتساب
+                      </a>
+                      <a
+                        href={`tel:${order.customer.phone}`}
+                        className="flex-1 flex items-center justify-center gap-1 py-1.5 text-xs font-bold bg-ink text-cream rounded"
+                      >
+                        <Phone className="h-3 w-3" />
+                        اتصال
+                      </a>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 
@@ -577,108 +646,256 @@ ${itemsList}
                   </td>
                 </tr>
               ) : (
-                filteredOrders.map((order) => (
-                  <tr key={order.id} className="hover:bg-kraft/40 transition-colors">
-                    <td className="py-3.5 pr-4 font-mono font-bold text-foreground">
-                      #{order.orderNumber}
-                    </td>
-                    <td className="py-3.5">
-                      <div className="font-semibold text-foreground">{order.customer.name}</div>
-                      {order.customer.notes ? (
-                        <div
-                          className="mt-0.5 inline-flex items-center gap-1 text-[11px] bg-amber-500/15 text-amber-900 border border-amber-500/30 px-2 py-0.5 rounded font-medium max-w-xs truncate"
-                          title={order.customer.notes}
-                        >
-                          <MessageSquare className="h-3 w-3 shrink-0 text-amber-700" />
-                          <span className="truncate">{order.customer.notes}</span>
-                        </div>
-                      ) : null}
-                    </td>
-                    <td className="py-3.5 font-mono text-xs" dir="ltr">
-                      <a
-                        href={`tel:${order.customer.phone}`}
-                        className="hover:text-brass underline font-semibold"
+                filteredOrders.map((order) => {
+                  const isExpanded = expandedOrderId === order.id;
+                  return (
+                    <Fragment key={order.id}>
+                      <tr
+                        onClick={() => toggleExpandOrder(order.id)}
+                        className={`hover:bg-kraft/40 transition-colors cursor-pointer ${
+                          isExpanded ? "bg-kraft/30" : ""
+                        }`}
                       >
-                        {order.customer.phone}
-                      </a>
-                    </td>
-                    <td className="py-3.5 text-muted-foreground text-xs">{order.customer.area}</td>
-                    <td className="py-3.5">
-                      <span className="font-semibold">
-                        {order.items.reduce((s, i) => s + i.qty, 0)} عبوة
-                      </span>{" "}
-                      <span className="text-xs text-muted-foreground">
-                        ({order.items.map((i) => i.name).join("، ")})
-                      </span>
-                    </td>
-                    <td className="py-3.5 font-bold font-mono text-foreground text-sm">
-                      {order.total} ج.م
-                    </td>
-                    <td className="py-3.5 text-xs text-muted-foreground">
-                      {new Date(order.createdAt).toLocaleDateString("ar-EG", {
-                        month: "short",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </td>
-                    <td className="py-3.5">
-                      <select
-                        value={order.status}
-                        onChange={(e) => {
-                          const newStatus = e.target.value as OrderStatus;
-                          updateOrderStatus(order.id, newStatus);
-                          toast.success(
-                            `تم تغيير حالة الطلب ${order.orderNumber} إلى ${newStatus}`,
-                          );
-                        }}
-                        className={`rounded border px-2.5 py-1 text-xs font-bold outline-none cursor-pointer ${getStatusBadge(
-                          order.status,
-                        )}`}
-                      >
-                        {STATUS_OPTIONS.map((opt) => (
-                          <option key={opt} value={opt}>
-                            {opt}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="py-3.5 pl-4 text-center">
-                      <div className="flex items-center justify-center gap-1.5">
-                        <button
-                          onClick={() => copyCourierDetails(order)}
-                          className="p-1.5 border border-ink/25 bg-background hover:bg-kraft rounded text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                          title="نسخ بيانات الطلب للدليفري"
-                        >
-                          {copiedId === order.id ? (
-                            <Check className="h-4 w-4 text-emerald-600" />
-                          ) : (
-                            <Copy className="h-4 w-4" />
-                          )}
-                        </button>
-                        <button
-                          onClick={() => setActiveOrder(order)}
-                          className="p-1.5 border border-ink/30 bg-ink text-cream hover:bg-brass hover:text-ink transition-colors rounded cursor-pointer"
-                          title="عرض تفاصيل الطلب والملاحظات"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (confirm(`هل أنت متأكد من حذف الطلب ${order.orderNumber}؟`)) {
-                              deleteOrder(order.id);
-                              toast.info(`تم حذف الطلب ${order.orderNumber}`);
-                            }
-                          }}
-                          className="p-1.5 border border-red-300 text-red-600 hover:bg-red-600 hover:text-white transition-colors rounded cursor-pointer"
-                          title="حذف الطلب"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                        <td className="py-3.5 pr-4 font-mono font-bold text-foreground">
+                          <div className="flex items-center gap-1.5">
+                            {isExpanded ? (
+                              <ChevronUp className="h-3.5 w-3.5 text-brass" />
+                            ) : (
+                              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                            )}
+                            <span>#{order.orderNumber}</span>
+                          </div>
+                        </td>
+                        <td className="py-3.5">
+                          <div className="font-semibold text-foreground">{order.customer.name}</div>
+                          {order.customer.notes ? (
+                            <div
+                              className="mt-0.5 inline-flex items-center gap-1 text-[11px] bg-amber-500/15 text-amber-900 border border-amber-500/30 px-2 py-0.5 rounded font-medium max-w-xs truncate"
+                              title={order.customer.notes}
+                            >
+                              <MessageSquare className="h-3 w-3 shrink-0 text-amber-700" />
+                              <span className="truncate">{order.customer.notes}</span>
+                            </div>
+                          ) : null}
+                        </td>
+                        <td className="py-3.5 font-mono text-xs" dir="ltr">
+                          <a
+                            href={`tel:${order.customer.phone}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="hover:text-brass underline font-semibold"
+                          >
+                            {order.customer.phone}
+                          </a>
+                        </td>
+                        <td className="py-3.5 text-muted-foreground text-xs">
+                          {order.customer.area}
+                        </td>
+                        <td className="py-3.5">
+                          <span className="font-semibold">
+                            {order.items.reduce((s, i) => s + i.qty, 0)} عبوة
+                          </span>{" "}
+                          <span className="text-xs text-muted-foreground">
+                            ({order.items.map((i) => i.name).join("، ")})
+                          </span>
+                        </td>
+                        <td className="py-3.5 font-bold font-mono text-foreground text-sm">
+                          {order.total} ج.م
+                        </td>
+                        <td className="py-3.5 text-xs text-muted-foreground">
+                          {new Date(order.createdAt).toLocaleDateString("ar-EG", {
+                            month: "short",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </td>
+                        <td className="py-3.5" onClick={(e) => e.stopPropagation()}>
+                          <select
+                            value={order.status}
+                            onChange={(e) => {
+                              const newStatus = e.target.value as OrderStatus;
+                              updateOrderStatus(order.id, newStatus);
+                              toast.success(
+                                `تم تغيير حالة الطلب ${order.orderNumber} إلى ${newStatus}`,
+                              );
+                            }}
+                            className={`rounded border px-2.5 py-1 text-xs font-bold outline-none cursor-pointer ${getStatusBadge(
+                              order.status,
+                            )}`}
+                          >
+                            {STATUS_OPTIONS.map((opt) => (
+                              <option key={opt} value={opt}>
+                                {opt}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className="py-3.5 pl-4 text-center" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-center gap-1.5">
+                            <button
+                              onClick={() => copyCourierDetails(order)}
+                              className="p-1.5 border border-ink/25 bg-background hover:bg-kraft rounded text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                              title="نسخ بيانات الطلب للدليفري"
+                            >
+                              {copiedId === order.id ? (
+                                <Check className="h-4 w-4 text-emerald-600" />
+                              ) : (
+                                <Copy className="h-4 w-4" />
+                              )}
+                            </button>
+                            <button
+                              onClick={() => toggleExpandOrder(order.id)}
+                              className={`p-1.5 border transition-colors rounded cursor-pointer ${
+                                isExpanded
+                                  ? "border-brass bg-brass text-ink font-bold"
+                                  : "border-ink/30 bg-ink text-cream hover:bg-brass hover:text-ink"
+                              }`}
+                              title={isExpanded ? "إخفاء التفاصيل" : "عرض التفاصيل في الجدول"}
+                            >
+                              {isExpanded ? (
+                                <ChevronUp className="h-4 w-4" />
+                              ) : (
+                                <Eye className="h-4 w-4" />
+                              )}
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (confirm(`هل أنت متأكد من حذف الطلب ${order.orderNumber}؟`)) {
+                                  deleteOrder(order.id);
+                                  toast.info(`تم حذف الطلب ${order.orderNumber}`);
+                                }
+                              }}
+                              className="p-1.5 border border-red-300 text-red-600 hover:bg-red-600 hover:text-white transition-colors rounded cursor-pointer"
+                              title="حذف الطلب"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+
+                      {/* Inline Expanded Table Row */}
+                      {isExpanded && (
+                        <tr className="bg-kraft/20 border-b-2 border-brass/40">
+                          <td colSpan={9} className="p-4">
+                            <div className="grid gap-4 md:grid-cols-2 bg-background p-4 rounded-lg border border-ink/15 shadow-xs">
+                              {/* Customer info & Notes */}
+                              <div className="space-y-2.5">
+                                <div className="flex items-center justify-between border-b border-ink/10 pb-1.5">
+                                  <span className="font-bold text-xs text-foreground flex items-center gap-1.5">
+                                    <User className="h-3.5 w-3.5 text-brass" />
+                                    بيانات العميل والتوصيل
+                                  </span>
+                                  <span className="font-mono text-xs font-semibold text-brass" dir="ltr">
+                                    {order.customer.phone}
+                                  </span>
+                                </div>
+
+                                <div className="text-xs space-y-1">
+                                  <p>
+                                    <span className="text-muted-foreground">الاسم: </span>
+                                    <span className="font-bold">{order.customer.name}</span>
+                                  </p>
+                                  <p className="flex items-start gap-1">
+                                    <MapPin className="h-3 w-3 text-brass shrink-0 mt-0.5" />
+                                    <span>
+                                      {order.customer.address} ({order.customer.area})
+                                    </span>
+                                  </p>
+                                </div>
+
+                                {/* Notes in Expanded Row */}
+                                {order.customer.notes ? (
+                                  <div className="bg-amber-500/10 border border-amber-500/30 p-2.5 rounded text-xs">
+                                    <span className="font-bold text-amber-900 block mb-0.5 flex items-center gap-1">
+                                      <MessageSquare className="h-3 w-3 text-amber-700" />
+                                      ملاحظات العميل:
+                                    </span>
+                                    <p className="text-foreground font-medium">{order.customer.notes}</p>
+                                  </div>
+                                ) : (
+                                  <p className="text-[11px] text-muted-foreground">لا توجد ملاحظات مسجلة مع هذا الطلب.</p>
+                                )}
+
+                                {/* Quick WhatsApp & Call buttons */}
+                                <div className="flex gap-2 pt-1">
+                                  <a
+                                    href={`https://wa.me/2${order.customer.phone.replace(/\D/g, "")}?text=${encodeURIComponent(
+                                      `أهلاً بك أستاذ ${order.customer.name}، بخصوص طلبك من محمصة بن فريد رقم (${order.orderNumber})...`,
+                                    )}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-bold bg-emerald-600 text-white rounded hover:bg-emerald-700 transition-colors shadow-xs"
+                                  >
+                                    <MessageSquare className="h-3.5 w-3.5" />
+                                    <span>مراسلة واتساب</span>
+                                  </a>
+                                  <a
+                                    href={`tel:${order.customer.phone}`}
+                                    className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-bold bg-ink text-cream rounded hover:bg-brass hover:text-ink transition-colors shadow-xs"
+                                  >
+                                    <Phone className="h-3.5 w-3.5" />
+                                    <span>اتصال هاتفي</span>
+                                  </a>
+                                  <button
+                                    onClick={() => copyCourierDetails(order)}
+                                    className="flex items-center justify-center gap-1 py-1.5 px-3 text-xs font-bold border border-ink/25 bg-cream hover:bg-kraft rounded transition-colors"
+                                    title="نسخ للدليفري"
+                                  >
+                                    <Copy className="h-3.5 w-3.5 text-brass" />
+                                    <span>نسخ للدليفري</span>
+                                  </button>
+                                </div>
+                              </div>
+
+                              {/* Products & Totals */}
+                              <div className="space-y-2 flex flex-col justify-between">
+                                <div className="border border-ink/10 rounded overflow-hidden">
+                                  <div className="bg-cream/60 px-3 py-1 text-xs font-bold border-b border-ink/10">
+                                    المنتجات المطلوبة
+                                  </div>
+                                  <div className="divide-y divide-ink/10 text-xs">
+                                    {order.items.map((item) => (
+                                      <div key={item.id} className="p-2 flex justify-between items-center">
+                                        <div>
+                                          <span className="font-bold">{item.name}</span>{" "}
+                                          <span className="bg-kraft px-1.5 py-0.2 text-[10px] rounded mr-1">
+                                            {item.weight}
+                                          </span>
+                                        </div>
+                                        <div className="font-mono">
+                                          {item.qty} × {item.price} ={" "}
+                                          <span className="font-bold">{item.price * item.qty} ج.م</span>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+
+                                <div className="bg-cream/40 p-2.5 rounded border border-ink/10 text-xs space-y-1">
+                                  <div className="flex justify-between text-muted-foreground">
+                                    <span>المجموع الفرعي:</span>
+                                    <span className="font-mono">{order.subtotal} ج.م</span>
+                                  </div>
+                                  <div className="flex justify-between text-muted-foreground">
+                                    <span>التوصيل:</span>
+                                    <span className="font-mono">{order.shipping} ج.م</span>
+                                  </div>
+                                  <div className="flex justify-between font-bold text-sm border-t border-ink/10 pt-1 text-foreground">
+                                    <span>الإجمالي للدفع عند الاستلام:</span>
+                                    <span className="font-mono text-brass font-extrabold text-base">
+                                      {order.total} ج.م
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  );
+                })
               )}
             </tbody>
           </table>
