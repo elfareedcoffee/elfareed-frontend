@@ -188,62 +188,25 @@ function Checkout() {
                   return;
                 }
 
-                // 1. Create cart with first item (must be serial to get cart_id)
-                const firstItem = resolvedItems[0];
-                const firstCartRes = await fetch(api("/api/v1/public/cart/items"), {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    product_variant_id: firstItem.resolvedVariantId,
-                    quantity: firstItem.qty,
-                  }),
-                });
-
-                if (!firstCartRes.ok) {
-                  const errData = await firstCartRes.json().catch(() => ({}));
-                  toast.error(parseApiErrorMessage(errData));
-                  setIsSubmitting(false);
-                  return;
-                }
-
-                const firstCartData = await firstCartRes.json();
-                const cartId = firstCartData?.id;
-
-                // 2. Add remaining items IN PARALLEL (all at once, not one-by-one)
-                if (resolvedItems.length > 1 && cartId) {
-                  await Promise.all(
-                    resolvedItems.slice(1).map((item) =>
-                      fetch(api("/api/v1/public/cart/items"), {
-                        method: "POST",
-                        headers: {
-                          "Content-Type": "application/json",
-                          "x-cart-id": cartId,
-                        },
-                        body: JSON.stringify({
-                          product_variant_id: item.resolvedVariantId,
-                          quantity: item.qty,
-                        }),
-                      }),
-                    ),
-                  );
-                }
-
-                // 3. Submit order with cart_id
-                const orderHeaders: Record<string, string> = { "Content-Type": "application/json" };
-                if (cartId) orderHeaders["x-cart-id"] = cartId;
+                // Submit order directly in a single atomic request (0 intermediate cart calls)
+                const orderPayload = {
+                  customer_name: customer.name,
+                  customer_phone: customer.phone,
+                  governorate: customer.area || "القاهرة",
+                  city: customer.area || "القاهرة",
+                  delivery_address: customer.address,
+                  delivery_notes: customer.notes || null,
+                  payment_method: "COD",
+                  items: resolvedItems.map((item) => ({
+                    product_variant_id: item.resolvedVariantId,
+                    quantity: item.qty,
+                  })),
+                };
 
                 const res = await fetch(api("/api/v1/public/orders/"), {
                   method: "POST",
-                  headers: orderHeaders,
-                  body: JSON.stringify({
-                    customer_name: customer.name,
-                    customer_phone: customer.phone,
-                    governorate: customer.area || "القاهرة",
-                    city: customer.area || "القاهرة",
-                    delivery_address: customer.address,
-                    delivery_notes: customer.notes || null,
-                    payment_method: "COD",
-                  }),
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(orderPayload),
                 });
 
                 if (res.ok) {
