@@ -272,13 +272,14 @@ function Checkout() {
             ))}
             <div>
               <label className="mb-1.5 block text-sm font-medium" htmlFor="notes">
-                ملاحظات الطحن (كنكة / فلتر / حبوب كاملة / إسبريسو)
+                ملاحظات الطلب أو الطحن (اختياري)
               </label>
               <textarea
                 id="notes"
-                rows={3}
-                placeholder="اكتب درجة الطحن أو أي تفاصيل تحب تضيفها..."
-                className="w-full border border-ink/40 bg-cream px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-brass"
+                name="notes"
+                rows={2}
+                placeholder="اكتب درجة الطحن (كنكة / فلتر / إسبريسو / حصى) أو أي تفاصيل خاصة بالتوصيل..."
+                className="w-full border border-ink/40 bg-cream px-3.5 py-2 text-sm outline-none transition-colors focus:border-brass"
               />
             </div>
             <div className="rounded border border-ink/20 bg-kraft/40 p-3 text-xs text-muted-foreground">

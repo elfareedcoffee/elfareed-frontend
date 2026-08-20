@@ -422,273 +422,252 @@ ${itemsList}
         </div>
       </div>
 
-      {/* Redesigned Luxury Order Details Window (Modal Dialog) */}
+      {/* Redesigned Compact Widescreen Order Details Window (No Blur, No Scrolling) */}
       {activeOrder && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-ink/70 backdrop-blur-xs animate-fade-in-up"
+          className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 animate-fade-in-up"
           onClick={(e) => {
             if (e.target === e.currentTarget) setActiveOrder(null);
           }}
         >
-          <div className="relative w-full max-w-3xl rounded-xl border border-ink/30 bg-background p-5 sm:p-7 shadow-2xl max-h-[92vh] overflow-y-auto space-y-6">
+          <div className="relative w-full max-w-4xl rounded-xl border border-ink/30 bg-background p-4 sm:p-5 shadow-2xl overflow-hidden flex flex-col max-h-[95vh]">
             {/* Modal Header */}
-            <div className="flex items-start justify-between border-b border-ink/15 pb-4">
-              <div>
-                <div className="flex flex-wrap items-center gap-2.5">
-                  <h3 className="font-display text-2xl sm:text-3xl text-foreground font-bold">
-                    طلب #{activeOrder.orderNumber}
-                  </h3>
-                  <span
-                    className={`rounded-full border px-3 py-0.5 text-xs font-bold ${getStatusBadge(
-                      activeOrder.status,
-                    )}`}
-                  >
-                    {activeOrder.status}
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5">
-                  <Clock className="h-3.5 w-3.5 text-brass" />
-                  <span>
-                    تاريخ الطلب:{" "}
-                    {new Date(activeOrder.createdAt).toLocaleDateString("ar-EG", {
-                      weekday: "long",
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </span>
-                </p>
+            <div className="flex items-center justify-between border-b border-ink/15 pb-3 shrink-0">
+              <div className="flex items-center gap-3">
+                <h3 className="font-display text-xl sm:text-2xl text-foreground font-bold">
+                  طلب #{activeOrder.orderNumber}
+                </h3>
+                <span
+                  className={`rounded-full border px-2.5 py-0.5 text-xs font-bold ${getStatusBadge(
+                    activeOrder.status,
+                  )}`}
+                >
+                  {activeOrder.status}
+                </span>
+                <span className="hidden sm:inline-block text-xs text-muted-foreground">
+                  (
+                  {new Date(activeOrder.createdAt).toLocaleDateString("ar-EG", {
+                    month: "short",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                  )
+                </span>
               </div>
 
-              <button
-                onClick={() => setActiveOrder(null)}
-                className="p-2 hover:bg-kraft/80 border border-ink/20 rounded-full transition-colors cursor-pointer text-muted-foreground hover:text-foreground"
-                title="إغلاق"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => copyCourierDetails(activeOrder)}
+                  className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded border border-ink/25 bg-cream hover:bg-kraft text-foreground transition-colors cursor-pointer"
+                  title="نسخ بيانات الطلب للدليفري"
+                >
+                  {copiedId === activeOrder.id ? (
+                    <>
+                      <Check className="h-3.5 w-3.5 text-emerald-600" />
+                      <span className="text-emerald-700">تم النسخ!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-3.5 w-3.5 text-brass" />
+                      <span>نسخ للدليفري</span>
+                    </>
+                  )}
+                </button>
 
-            {/* Customer Notes Card (Highlighted Prominently) */}
-            <div
-              className={`rounded-lg p-4 border transition-all ${
-                activeOrder.customer.notes
-                  ? "bg-amber-500/10 border-amber-500/40 shadow-xs"
-                  : "bg-cream/40 border-ink/10"
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm font-bold text-foreground">
-                  <MessageSquare
-                    className={`h-4 w-4 ${
-                      activeOrder.customer.notes ? "text-amber-700" : "text-muted-foreground"
-                    }`}
-                  />
-                  <span>ملاحظات العميل والتوصيل / الطحن:</span>
-                </div>
-                {activeOrder.customer.notes && (
-                  <span className="text-[11px] bg-amber-500/20 text-amber-900 border border-amber-500/30 px-2 py-0.5 rounded font-bold">
-                    ملاحظة خاصة مسجلة
-                  </span>
-                )}
+                <button
+                  onClick={() => setActiveOrder(null)}
+                  className="p-1.5 hover:bg-kraft/80 border border-ink/20 rounded-full transition-colors cursor-pointer text-muted-foreground hover:text-foreground"
+                  title="إغلاق"
+                >
+                  <X className="h-5 w-5" />
+                </button>
               </div>
-
-              {activeOrder.customer.notes ? (
-                <div className="mt-2.5 rounded-md bg-background/90 p-3.5 border border-amber-500/30 text-sm font-medium text-foreground leading-relaxed shadow-xs">
-                  {activeOrder.customer.notes}
-                </div>
-              ) : (
-                <p className="mt-1.5 text-xs text-muted-foreground">
-                  لا توجد ملاحظات إضافية مسجلة من العميل مع هذا الطلب.
-                </p>
-              )}
             </div>
 
-            {/* Two Columns Grid: Customer Details & Contact Actions */}
-            <div className="grid gap-4 sm:grid-cols-2">
-              {/* Customer Info Card */}
-              <div className="rounded-lg border border-ink/15 bg-cream/50 p-4 space-y-3">
-                <div className="flex items-center gap-2 border-b border-ink/10 pb-2 text-xs font-bold text-foreground uppercase">
-                  <User className="h-4 w-4 text-brass" />
-                  <span>بيانات العميل والعنوان</span>
-                </div>
-
-                <div className="space-y-2 text-xs sm:text-sm">
-                  <div>
-                    <span className="text-muted-foreground text-xs block">اسم العميل:</span>
-                    <span className="font-bold text-foreground text-base">
-                      {activeOrder.customer.name}
+            {/* Compact 2-Column Content (Fits entirely on screen) */}
+            <div className="grid gap-3.5 md:grid-cols-2 pt-3 overflow-y-auto pr-1">
+              {/* Left Column: Customer Details, Notes, & Quick Contacts */}
+              <div className="space-y-3 flex flex-col justify-between">
+                {/* Customer Info Card */}
+                <div className="rounded-lg border border-ink/15 bg-cream/40 p-3 space-y-2 text-xs sm:text-sm">
+                  <div className="flex items-center justify-between border-b border-ink/10 pb-1.5">
+                    <span className="font-bold text-foreground flex items-center gap-1.5">
+                      <User className="h-3.5 w-3.5 text-brass" />
+                      بيانات العميل
                     </span>
-                  </div>
-
-                  <div>
-                    <span className="text-muted-foreground text-xs block">رقم الهاتف:</span>
-                    <span className="font-mono font-bold text-foreground" dir="ltr">
+                    <span className="font-mono text-xs font-semibold text-brass" dir="ltr">
                       {activeOrder.customer.phone}
                     </span>
                   </div>
 
-                  <div>
-                    <span className="text-muted-foreground text-xs block">العنوان بالتفصيل:</span>
-                    <p className="font-medium text-foreground flex items-start gap-1.5 mt-0.5">
-                      <MapPin className="h-4 w-4 text-brass shrink-0 mt-0.5" />
-                      <span>
-                        {activeOrder.customer.address} ({activeOrder.customer.area})
-                      </span>
-                    </p>
+                  <div className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 text-xs">
+                    <span className="text-muted-foreground">الاسم:</span>
+                    <span className="font-bold text-foreground">{activeOrder.customer.name}</span>
+
+                    <span className="text-muted-foreground">العنوان:</span>
+                    <span className="font-medium text-foreground flex items-start gap-1">
+                      <MapPin className="h-3 w-3 text-brass shrink-0 mt-0.5" />
+                      {activeOrder.customer.address} ({activeOrder.customer.area})
+                    </span>
                   </div>
                 </div>
-              </div>
 
-              {/* Quick Communication Actions Card */}
-              <div className="rounded-lg border border-ink/15 bg-cream/50 p-4 flex flex-col justify-between space-y-3">
-                <div className="flex items-center gap-2 border-b border-ink/10 pb-2 text-xs font-bold text-foreground uppercase">
-                  <Phone className="h-4 w-4 text-brass" />
-                  <span>التواصل السريع وتجهيز الشحن</span>
+                {/* Customer Notes (Highlighted Callout Box) */}
+                <div
+                  className={`rounded-lg p-3 border text-xs transition-all ${
+                    activeOrder.customer.notes
+                      ? "bg-amber-500/10 border-amber-500/40 text-amber-950"
+                      : "bg-cream/30 border-ink/10 text-muted-foreground"
+                  }`}
+                >
+                  <div className="flex items-center justify-between font-bold">
+                    <span className="flex items-center gap-1.5">
+                      <MessageSquare
+                        className={`h-3.5 w-3.5 ${
+                          activeOrder.customer.notes ? "text-amber-700" : "text-muted-foreground"
+                        }`}
+                      />
+                      ملاحظات العميل والتوصيل / الطحن:
+                    </span>
+                    {activeOrder.customer.notes && (
+                      <span className="text-[10px] bg-amber-500/20 text-amber-900 border border-amber-500/30 px-1.5 py-0.2 rounded font-bold">
+                        مسجلة
+                      </span>
+                    )}
+                  </div>
+
+                  {activeOrder.customer.notes ? (
+                    <p className="mt-1.5 font-medium leading-relaxed bg-background/90 p-2 rounded border border-amber-500/30 text-foreground">
+                      {activeOrder.customer.notes}
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-[11px]">لا توجد ملاحظات مسجلة مع هذا الطلب.</p>
+                  )}
                 </div>
 
-                <div className="space-y-2.5">
+                {/* Quick Actions Card */}
+                <div className="grid grid-cols-2 gap-2 pt-1">
                   <a
                     href={`https://wa.me/2${activeOrder.customer.phone.replace(/\D/g, "")}?text=${encodeURIComponent(
                       `أهلاً بك أستاذ ${activeOrder.customer.name}، بخصوص طلبك من محمصة بن فريد رقم (${activeOrder.orderNumber})...`,
                     )}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="flex items-center justify-center gap-2 w-full border border-emerald-600 bg-emerald-600 px-4 py-2.5 text-xs sm:text-sm font-bold text-white transition-colors hover:bg-emerald-700 rounded-md shadow-xs"
+                    className="flex items-center justify-center gap-1.5 border border-emerald-600 bg-emerald-600 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-emerald-700 rounded-md shadow-xs"
                   >
-                    <MessageSquare className="h-4 w-4" />
-                    <span>مراسلة واتساب فورية</span>
+                    <MessageSquare className="h-3.5 w-3.5" />
+                    <span>مراسلة واتساب</span>
                   </a>
 
                   <a
                     href={`tel:${activeOrder.customer.phone}`}
-                    className="flex items-center justify-center gap-2 w-full border border-ink bg-ink px-4 py-2.5 text-xs sm:text-sm font-bold text-cream transition-colors hover:bg-brass hover:text-ink rounded-md shadow-xs"
+                    className="flex items-center justify-center gap-1.5 border border-ink bg-ink px-3 py-2 text-xs font-bold text-cream transition-colors hover:bg-brass hover:text-ink rounded-md shadow-xs"
                   >
-                    <Phone className="h-4 w-4" />
-                    <span>اتصال بالعميل ({activeOrder.customer.phone})</span>
+                    <Phone className="h-3.5 w-3.5" />
+                    <span>اتصال بالعميل</span>
                   </a>
-
-                  <button
-                    onClick={() => copyCourierDetails(activeOrder)}
-                    className="flex items-center justify-center gap-2 w-full border border-ink/30 bg-background hover:bg-kraft px-4 py-2 text-xs font-bold text-foreground rounded-md transition-colors cursor-pointer"
-                  >
-                    {copiedId === activeOrder.id ? (
-                      <>
-                        <Check className="h-4 w-4 text-emerald-600" />
-                        <span className="text-emerald-700">تم نسخ بيانات التوصيل!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="h-4 w-4" />
-                        <span>نسخ بيانات الطلب لمندوب الدليفري</span>
-                      </>
-                    )}
-                  </button>
                 </div>
               </div>
-            </div>
 
-            {/* Ordered Products Table */}
-            <div className="rounded-lg border border-ink/15 bg-cream/30 overflow-hidden">
-              <div className="bg-background/80 px-4 py-2.5 border-b border-ink/10 flex items-center justify-between">
-                <span className="text-xs font-bold text-foreground flex items-center gap-2">
-                  <Coffee className="h-4 w-4 text-brass" />
-                  المنتجات المطلوبة ({activeOrder.items.reduce((s, i) => s + i.qty, 0)} عبوة)
-                </span>
-              </div>
-
-              <div className="divide-y divide-ink/10">
-                {activeOrder.items.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between p-3.5 text-xs sm:text-sm hover:bg-background/60 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded-full bg-brass/20 text-brass flex items-center justify-center font-bold font-display text-sm">
-                        ☕
-                      </div>
-                      <div>
-                        <p className="font-bold text-foreground text-sm">{item.name}</p>
-                        <span className="inline-block mt-0.5 bg-kraft/70 border border-ink/20 px-2 py-0.5 text-[11px] font-semibold rounded">
-                          الوزن: {item.weight}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-4 text-left">
-                      <span className="text-muted-foreground font-mono text-xs">
-                        {item.qty} × {item.price} ج.م
-                      </span>
-                      <span className="font-bold font-mono text-foreground text-sm sm:text-base">
-                        {item.price * item.qty} ج.م
-                      </span>
-                    </div>
+              {/* Right Column: Ordered Items & Financial Summary */}
+              <div className="space-y-3 flex flex-col justify-between">
+                {/* Items Table */}
+                <div className="rounded-lg border border-ink/15 bg-cream/30 overflow-hidden">
+                  <div className="bg-background/80 px-3 py-1.5 border-b border-ink/10 flex items-center justify-between text-xs font-bold">
+                    <span className="flex items-center gap-1.5 text-foreground">
+                      <Coffee className="h-3.5 w-3.5 text-brass" />
+                      المنتجات المطلوبة ({activeOrder.items.reduce((s, i) => s + i.qty, 0)} عبوة)
+                    </span>
                   </div>
-                ))}
-              </div>
-            </div>
 
-            {/* Financial Summary Box */}
-            <div className="rounded-lg border border-ink/20 bg-cream/70 p-4 space-y-2 text-xs sm:text-sm">
-              <div className="flex justify-between text-muted-foreground">
-                <span>المجموع الفرعي للمنتجات:</span>
-                <span className="font-mono font-semibold">{activeOrder.subtotal} ج.م</span>
-              </div>
-              <div className="flex justify-between text-muted-foreground">
-                <span>مصاريف التوصيل:</span>
-                <span className="font-mono font-semibold">{activeOrder.shipping} ج.م</span>
-              </div>
-              <div className="flex justify-between border-t border-ink/20 pt-3 text-base sm:text-lg font-bold text-foreground">
-                <span>الإجمالي المطلوب تحصيله عند الاستلام:</span>
-                <span className="font-mono text-brass font-extrabold text-xl sm:text-2xl">
-                  {activeOrder.total} ج.م
-                </span>
-              </div>
-            </div>
+                  <div className="divide-y divide-ink/10 max-h-36 overflow-y-auto">
+                    {activeOrder.items.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center justify-between px-3 py-2 text-xs hover:bg-background/60 transition-colors"
+                      >
+                        <div>
+                          <span className="font-bold text-foreground">{item.name}</span>{" "}
+                          <span className="inline-block bg-kraft/80 border border-ink/20 px-1.5 py-0.2 text-[10px] font-semibold rounded mr-1">
+                            {item.weight}
+                          </span>
+                        </div>
 
-            {/* Modal Actions Footer */}
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-ink/15 pt-4">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-muted-foreground">تحديث الحالة:</span>
-                <select
-                  value={activeOrder.status}
-                  onChange={(e) => {
-                    const newStatus = e.target.value as OrderStatus;
-                    updateOrderStatus(activeOrder.id, newStatus);
-                    setActiveOrder({ ...activeOrder, status: newStatus });
-                    toast.success(`تم تحديث حالة الطلب إلى ${newStatus}`);
-                  }}
-                  className="rounded border border-ink/30 bg-background px-3 py-1.5 text-xs font-bold outline-none cursor-pointer focus:border-brass"
-                >
-                  {STATUS_OPTIONS.map((opt) => (
-                    <option key={opt} value={opt}>
-                      {opt}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                        <div className="flex items-center gap-3 font-mono">
+                          <span className="text-muted-foreground text-[11px]">
+                            {item.qty} × {item.price}
+                          </span>
+                          <span className="font-bold text-foreground text-xs">
+                            {item.price * item.qty} ج.م
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
 
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => {
-                    if (confirm(`هل أنت متأكد من حذف الطلب ${activeOrder.orderNumber}؟`)) {
-                      deleteOrder(activeOrder.id);
-                      setActiveOrder(null);
-                      toast.info(`تم حذف الطلب ${activeOrder.orderNumber}`);
-                    }
-                  }}
-                  className="px-3 py-2 text-xs font-bold border border-red-300 text-red-600 hover:bg-red-600 hover:text-white rounded transition-colors cursor-pointer"
-                >
-                  حذف الطلب
-                </button>
-                <button
-                  onClick={() => setActiveOrder(null)}
-                  className="border border-ink bg-ink px-6 py-2 text-xs font-bold text-cream hover:bg-brass hover:text-ink rounded transition-colors cursor-pointer shadow-xs"
-                >
-                  إغلاق
-                </button>
+                {/* Financial Summary */}
+                <div className="rounded-lg border border-ink/20 bg-cream/60 p-2.5 space-y-1 text-xs">
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>المجموع الفرعي:</span>
+                    <span className="font-mono font-semibold">{activeOrder.subtotal} ج.م</span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>مصاريف التوصيل:</span>
+                    <span className="font-mono font-semibold">{activeOrder.shipping} ج.م</span>
+                  </div>
+                  <div className="flex justify-between border-t border-ink/15 pt-1.5 text-sm font-bold text-foreground">
+                    <span>المطلوب عند الاستلام (COD):</span>
+                    <span className="font-mono text-brass font-extrabold text-base sm:text-lg">
+                      {activeOrder.total} ج.م
+                    </span>
+                  </div>
+                </div>
+
+                {/* Status Switcher & Actions */}
+                <div className="flex items-center justify-between gap-2 border-t border-ink/15 pt-2.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-bold text-muted-foreground">الحالة:</span>
+                    <select
+                      value={activeOrder.status}
+                      onChange={(e) => {
+                        const newStatus = e.target.value as OrderStatus;
+                        updateOrderStatus(activeOrder.id, newStatus);
+                        setActiveOrder({ ...activeOrder, status: newStatus });
+                        toast.success(`تم تحديث حالة الطلب إلى ${newStatus}`);
+                      }}
+                      className="rounded border border-ink/30 bg-background px-2.5 py-1 text-xs font-bold outline-none cursor-pointer focus:border-brass"
+                    >
+                      {STATUS_OPTIONS.map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => {
+                        if (confirm(`هل أنت متأكد من حذف الطلب ${activeOrder.orderNumber}؟`)) {
+                          deleteOrder(activeOrder.id);
+                          setActiveOrder(null);
+                          toast.info(`تم حذف الطلب ${activeOrder.orderNumber}`);
+                        }
+                      }}
+                      className="px-2.5 py-1 text-xs font-bold border border-red-300 text-red-600 hover:bg-red-600 hover:text-white rounded transition-colors cursor-pointer"
+                    >
+                      حذف
+                    </button>
+                    <button
+                      onClick={() => setActiveOrder(null)}
+                      className="border border-ink bg-ink px-4 py-1 text-xs font-bold text-cream hover:bg-brass hover:text-ink rounded transition-colors cursor-pointer shadow-xs"
+                    >
+                      إغلاق
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
